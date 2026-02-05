@@ -22,5 +22,17 @@
         "registrationFailed": "Registration failed. Please try again.",
         "confirmPassword": "Confirm password",
         "passwordsDoNotMatch": "Passwords do not match."
+    },
+    "chat": {
+        "conversations": "Conversations",
+        "newChat": "New Chat",
+        "noConversations": "No conversations yet",
+        "loading": "Loading...",
+        "welcomeMessage": "Hello! I'm your AI assistant. How can I help you today?",
+        "messageInputPlaceholder": "Type your message...",
+        "send": "Send",
+        "tokens": "tokens",
+        "message": "message",
+        "messages": "messages"
     }
 }
