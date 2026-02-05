@@ -31,8 +31,21 @@
         "welcomeMessage": "Hello! I'm your AI assistant. How can I help you today?",
         "messageInputPlaceholder": "Type your message...",
         "send": "Send",
+        "sending": "Sending...",
         "tokens": "tokens",
         "message": "message",
-        "messages": "messages"
+        "messages": "messages",
+        "emptyState": {
+            "title": "Start a new conversation",
+            "description": "Click 'New Chat' to begin a conversation with the AI assistant.",
+            "hint": "You can have up to 25 conversations with 200 messages each."
+        },
+        "errors": {
+            "network": "Network error. Please check your connection and try again.",
+            "quota": "Daily token quota exceeded. Your quota will reset at midnight UTC.",
+            "rateLimit": "Rate limit exceeded. Please wait a moment before sending another message.",
+            "session": "Your session has expired. Please refresh the page to continue.",
+            "dismiss": "Dismiss"
+        }
     }
 }

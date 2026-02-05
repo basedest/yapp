@@ -1,6 +1,7 @@
 'use client';
 
 import { MessageCard } from 'src/entities/message/ui';
+import { EmptyState } from './empty-state';
 
 type Message = {
     id: string;
@@ -12,9 +13,26 @@ type Message = {
 
 type MessageListProps = {
     messages: Message[];
+    isLoading?: boolean;
 };
 
-export function MessageList({ messages }: MessageListProps) {
+export function MessageList({ messages, isLoading }: MessageListProps) {
+    if (isLoading) {
+        return (
+            <div className="flex flex-1 items-center justify-center">
+                <p className="text-muted-foreground text-sm">Loading messages...</p>
+            </div>
+        );
+    }
+
+    if (messages.length === 0) {
+        return (
+            <div className="flex-1">
+                <EmptyState />
+            </div>
+        );
+    }
+
     return (
         <div className="flex-1 overflow-y-auto p-6">
             <div className="mx-auto max-w-3xl space-y-4">
