@@ -11,14 +11,23 @@ type Message = {
     createdAt: Date;
 };
 
+import type { PiiMaskRegion } from 'src/shared/ui/pii-mask';
+
 type MessageListProps = {
     messages: Message[];
     isLoading?: boolean;
     isStreaming?: boolean;
     streamingContent?: string;
+    streamingPiiMaskRegions?: PiiMaskRegion[];
 };
 
-export function MessageList({ messages, isLoading, isStreaming, streamingContent }: MessageListProps) {
+export function MessageList({
+    messages,
+    isLoading,
+    isStreaming,
+    streamingContent,
+    streamingPiiMaskRegions = [],
+}: MessageListProps) {
     if (isLoading) {
         return (
             <div className="flex flex-1 items-center justify-center">
@@ -47,7 +56,9 @@ export function MessageList({ messages, isLoading, isStreaming, streamingContent
                         tokenCount={message.tokenCount}
                     />
                 ))}
-                {isStreaming && <TypingIndicator content={streamingContent} />}
+                {isStreaming && (
+                    <TypingIndicator content={streamingContent || ''} piiMaskRegions={streamingPiiMaskRegions} />
+                )}
             </div>
         </div>
     );

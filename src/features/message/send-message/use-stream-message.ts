@@ -8,10 +8,18 @@ type StreamEvent =
     | { type: 'error'; error: string }
     | { type: 'pii_mask'; startOffset: number; endOffset: number; piiType: string; originalLength: number };
 
+export type PiiMaskRegion = {
+    startOffset: number;
+    endOffset: number;
+    piiType: string;
+    originalLength: number;
+};
+
 type StreamState = {
     isStreaming: boolean;
     streamingContent: string;
     error: string | null;
+    piiMaskRegions: PiiMaskRegion[];
 };
 
 type SendMessageOptions = {
@@ -20,6 +28,7 @@ type SendMessageOptions = {
     onChunk?: (content: string) => void;
     onComplete?: (data: { userMessageId: string; assistantMessageId: string; totalTokens: number }) => void;
     onError?: (error: string) => void;
+    onPiiMask?: (region: PiiMaskRegion) => void;
 };
 
 export function useStreamMessage() {
@@ -27,14 +36,16 @@ export function useStreamMessage() {
         isStreaming: false,
         streamingContent: '',
         error: null,
+        piiMaskRegions: [],
     });
 
     const sendMessage = useCallback(
-        async ({ conversationId, content, onChunk, onComplete, onError }: SendMessageOptions) => {
+        async ({ conversationId, content, onChunk, onComplete, onError, onPiiMask }: SendMessageOptions) => {
             setState({
                 isStreaming: true,
                 streamingContent: '',
                 error: null,
+                piiMaskRegions: [],
             });
 
             try {
@@ -53,6 +64,7 @@ export function useStreamMessage() {
                         isStreaming: false,
                         streamingContent: '',
                         error: errorMessage,
+                        piiMaskRegions: [],
                     });
                     onError?.(errorMessage);
                     return;
@@ -98,6 +110,7 @@ export function useStreamMessage() {
                                         isStreaming: false,
                                         streamingContent: '',
                                         error: null,
+                                        piiMaskRegions: [],
                                     });
                                     onComplete?.(event);
                                 } else if (event.type === 'error') {
@@ -105,12 +118,22 @@ export function useStreamMessage() {
                                         isStreaming: false,
                                         streamingContent: '',
                                         error: event.error,
+                                        piiMaskRegions: [],
                                     });
                                     onError?.(event.error);
                                 } else if (event.type === 'pii_mask') {
-                                    // PII mask event - server has already masked the content before sending
-                                    // This event is for retroactive masking or frontend UI enhancement
-                                    // For now, we just acknowledge it (future task: spoiler-style UI)
+                                    // PII mask event - track mask regions for UI rendering
+                                    const region: PiiMaskRegion = {
+                                        startOffset: event.startOffset,
+                                        endOffset: event.endOffset,
+                                        piiType: event.piiType,
+                                        originalLength: event.originalLength,
+                                    };
+                                    setState((prev) => ({
+                                        ...prev,
+                                        piiMaskRegions: [...prev.piiMaskRegions, region],
+                                    }));
+                                    onPiiMask?.(region);
                                 }
                             } catch (e) {
                                 console.error('Failed to parse SSE message:', e);
@@ -124,6 +147,7 @@ export function useStreamMessage() {
                     isStreaming: false,
                     streamingContent: '',
                     error: errorMessage,
+                    piiMaskRegions: [],
                 });
                 onError?.(errorMessage);
             }

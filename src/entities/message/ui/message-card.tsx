@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Card, CardContent } from 'src/shared/ui/card';
+import { PiiMask, type PiiMaskRegion } from 'src/shared/ui/pii-mask';
 import { cn } from 'src/shared/lib/utils';
 
 export type MessageCardProps = {
@@ -10,9 +11,17 @@ export type MessageCardProps = {
     timestamp: Date;
     tokenCount?: number;
     className?: string;
+    piiMaskRegions?: PiiMaskRegion[];
 };
 
-export function MessageCard({ role, content, timestamp, tokenCount, className }: MessageCardProps) {
+export function MessageCard({
+    role,
+    content,
+    timestamp,
+    tokenCount,
+    className,
+    piiMaskRegions = [],
+}: MessageCardProps) {
     const t = useTranslations('chat');
     const isUser = role === 'user';
     const isAssistant = role === 'assistant';
@@ -58,7 +67,13 @@ export function MessageCard({ role, content, timestamp, tokenCount, className }:
                                 </span>
                             )}
                         </div>
-                        <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{content}</p>
+                        <div className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                            {piiMaskRegions.length > 0 ? (
+                                <PiiMask text={content} maskRegions={piiMaskRegions} />
+                            ) : (
+                                <p>{content}</p>
+                            )}
+                        </div>
                     </div>
                 </CardContent>
             </Card>

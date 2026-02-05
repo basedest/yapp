@@ -47,7 +47,7 @@ export function ChatView() {
         { enabled: !!selectedConversationId },
     );
 
-    const { isStreaming, streamingContent, sendMessage } = useStreamMessage();
+    const { isStreaming, streamingContent, piiMaskRegions, sendMessage } = useStreamMessage();
 
     const createConversationMutation = trpc.conversation.create.useMutation({
         onSuccess: (conversation) => {
@@ -200,6 +200,7 @@ export function ChatView() {
                     }}
                 />
                 <MessageList
+                    streamingPiiMaskRegions={piiMaskRegions}
                     messages={displayMessages}
                     isLoading={loadingMessages}
                     isStreaming={isStreaming}

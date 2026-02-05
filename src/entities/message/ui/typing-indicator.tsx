@@ -2,12 +2,14 @@
 
 import { useTranslations } from 'next-intl';
 import { Card, CardContent } from 'src/shared/ui/card';
+import { PiiMask, type PiiMaskRegion } from 'src/shared/ui/pii-mask';
 
 type TypingIndicatorProps = {
     content?: string;
+    piiMaskRegions?: PiiMaskRegion[];
 };
 
-export function TypingIndicator({ content }: TypingIndicatorProps) {
+export function TypingIndicator({ content, piiMaskRegions = [] }: TypingIndicatorProps) {
     const t = useTranslations('chat');
 
     return (
@@ -15,8 +17,17 @@ export function TypingIndicator({ content }: TypingIndicatorProps) {
             <CardContent className="p-4">
                 {content ? (
                     <div className="break-words whitespace-pre-wrap">
-                        {content}
-                        <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-current" />
+                        {piiMaskRegions.length > 0 ? (
+                            <>
+                                <PiiMask text={content} maskRegions={piiMaskRegions} />
+                                <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-current" />
+                            </>
+                        ) : (
+                            <>
+                                {content}
+                                <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-current" />
+                            </>
+                        )}
                     </div>
                 ) : (
                     <div className="flex items-center gap-2">
