@@ -32,6 +32,22 @@ export type OpenRouterError = {
     };
 };
 
+export type ChatCompletionResponse = {
+    id: string;
+    choices: Array<{
+        message: {
+            role: string;
+            content: string;
+        };
+        finish_reason: string;
+    }>;
+    usage?: {
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
+    };
+};
+
 class OpenRouterClient {
     private readonly apiKey: string;
     private readonly model: string;
@@ -117,6 +133,53 @@ class OpenRouterClient {
         } finally {
             reader.releaseLock();
         }
+    }
+
+    /**
+     * Create a non-streaming chat completion
+     * @param messages - Array of chat messages
+     * @param options - Optional overrides (model, temperature, max_tokens)
+     * @returns Completion response
+     */
+    async createChatCompletion(
+        messages: ChatMessage[],
+        options?: {
+            model?: string;
+            temperature?: number;
+            max_tokens?: number;
+            signal?: AbortSignal;
+        },
+    ): Promise<ChatCompletionResponse> {
+        const model = options?.model ?? this.model;
+        logger.debug({ model, messageCount: messages.length }, 'Starting OpenRouter completion');
+
+        const response = await fetch(`${this.baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${this.apiKey}`,
+                'HTTP-Referer': 'https://promptify.local',
+                'X-Title': 'Promptify',
+            },
+            body: JSON.stringify({
+                model,
+                messages,
+                temperature: options?.temperature ?? 0,
+                max_tokens: options?.max_tokens ?? 2000,
+            }),
+            signal: options?.signal,
+        });
+
+        if (!response.ok) {
+            const errorData = (await response.json().catch(() => ({}))) as OpenRouterError;
+            const errorMessage = errorData.error?.message || response.statusText;
+            logger.error({ status: response.status, error: errorMessage }, 'OpenRouter API request failed');
+            throw new Error(`OpenRouter API error: ${errorMessage}`);
+        }
+
+        const data = (await response.json()) as ChatCompletionResponse;
+        logger.debug({ model, usage: data.usage }, 'OpenRouter completion completed');
+        return data;
     }
 
     /**

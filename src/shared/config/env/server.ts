@@ -35,6 +35,7 @@ const rawServerEnvSchema = z.object({
     PII_DETECTION_ENABLED: z.string().optional(),
     PII_CHUNK_BATCH_SIZE: z.string().optional(),
     PII_DETECTION_TIMEOUT_MS: z.string().optional(),
+    PII_DETECTION_MODEL: z.string().optional(),
     PII_TYPES: z.string().optional(),
     PII_FALLBACK_WHEN_UNAVAILABLE: z.string().optional(),
 });
@@ -55,6 +56,7 @@ const serverEnvSchema = rawServerEnvSchema.transform((raw): ServerConfig => {
     const piiEnabled = raw.PII_DETECTION_ENABLED?.toLowerCase() === 'true';
     const piiChunkBatchSize = Math.max(1, parseInt(raw.PII_CHUNK_BATCH_SIZE ?? '5', 10) || 5);
     const piiTimeoutMs = Math.max(1000, parseInt(raw.PII_DETECTION_TIMEOUT_MS ?? '5000', 10) || 5000);
+    const piiModel = raw.PII_DETECTION_MODEL?.trim() || 'openai/gpt-5-nano';
     const piiFallbackRaw = raw.PII_FALLBACK_WHEN_UNAVAILABLE?.toLowerCase() ?? 'continue_without_masking';
     const piiFallback: PiiFallbackWhenUnavailable = PII_FALLBACK_VALUES.includes(
         piiFallbackRaw as PiiFallbackWhenUnavailable,
@@ -98,6 +100,7 @@ const serverEnvSchema = rawServerEnvSchema.transform((raw): ServerConfig => {
             enabled: piiEnabled,
             chunkBatchSize: piiChunkBatchSize,
             detectionTimeoutMs: piiTimeoutMs,
+            model: piiModel,
             piiTypes: parsePiiTypes(raw.PII_TYPES),
             fallbackWhenUnavailable: piiFallback,
         },
@@ -123,6 +126,7 @@ export type ServerConfig = {
         enabled: boolean;
         chunkBatchSize: number;
         detectionTimeoutMs: number;
+        model: string;
         piiTypes: PiiType[];
         fallbackWhenUnavailable: PiiFallbackWhenUnavailable;
     };
@@ -139,6 +143,7 @@ function getRawEnv(): Record<string, string | undefined> {
         PII_DETECTION_ENABLED: process.env.PII_DETECTION_ENABLED,
         PII_CHUNK_BATCH_SIZE: process.env.PII_CHUNK_BATCH_SIZE,
         PII_DETECTION_TIMEOUT_MS: process.env.PII_DETECTION_TIMEOUT_MS,
+        PII_DETECTION_MODEL: process.env.PII_DETECTION_MODEL,
         PII_TYPES: process.env.PII_TYPES,
         PII_FALLBACK_WHEN_UNAVAILABLE: process.env.PII_FALLBACK_WHEN_UNAVAILABLE,
     };
