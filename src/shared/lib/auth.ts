@@ -3,13 +3,16 @@ import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 import { prisma } from 'src/shared/lib/prisma';
 import { logger } from 'src/shared/lib/logger';
+import { getServerConfig } from '../config/env';
 
-// Requires env: BETTER_AUTH_URL (e.g. http://localhost:3000), BETTER_AUTH_SECRET (32+ chars)
+const config = getServerConfig();
+
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: 'postgresql',
     }),
-    baseURL: process.env.BETTER_AUTH_URL,
+    baseURL: config.auth.baseUrl,
+    secret: config.auth.secret,
     emailAndPassword: {
         enabled: true,
         requireEmailVerification: false,

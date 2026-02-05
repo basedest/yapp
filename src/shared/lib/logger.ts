@@ -1,10 +1,11 @@
 import pino from 'pino';
+import { getServerConfig } from '../config/env';
 
-const isDev = process.env.NODE_ENV === 'development';
+const config = getServerConfig();
 
 export const logger = pino({
-    level: process.env.LOG_LEVEL ?? (isDev ? 'debug' : 'info'),
-    ...(isDev && {
+    level: config.logLevel,
+    ...(config.nodeEnv === 'development' && {
         transport: {
             target: 'pino-pretty',
             options: { colorize: true },
