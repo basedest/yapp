@@ -56,6 +56,7 @@ export function MessageList({
                         timestamp={message.createdAt}
                         tokenCount={message.tokenCount}
                         piiMaskRegions={message.piiMaskRegions}
+                        messageId={message.id}
                     />
                 ))}
                 {isStreaming && (

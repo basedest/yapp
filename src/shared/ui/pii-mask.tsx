@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { cn } from 'src/shared/lib/utils';
+import { trpc } from 'src/shared/api/trpc/client';
 
 export type PiiMaskRegion = {
     startOffset: number;
@@ -14,19 +15,24 @@ type PiiMaskProps = {
     text: string;
     maskRegions: PiiMaskRegion[];
     className?: string;
+    messageId?: string; // Optional: for logging unmask actions (AC4, NFR3)
 };
 
 /**
  * PII Mask Component
  * Renders text with masked PII regions that can be revealed on click
  * Supports retroactive masking with fade/blur animation
+ * Logs unmask actions for audit when messageId is provided (AC4)
  */
-export function PiiMask({ text, maskRegions, className }: PiiMaskProps) {
+export function PiiMask({ text, maskRegions, className, messageId }: PiiMaskProps) {
     const [revealedRegions, setRevealedRegions] = useState<Set<string>>(new Set());
     const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
     const [newlyMaskedRegions, setNewlyMaskedRegions] = useState<Set<string>>(new Set());
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const previousRegionsRef = useRef<PiiMaskRegion[]>([]);
+
+    // Unmask logging mutation (AC4, NFR3)
+    const logUnmaskMutation = trpc.piiDetection.logUnmask.useMutation();
 
     // Track newly added regions for retroactive masking animation
     useEffect(() => {
@@ -46,25 +52,49 @@ export function PiiMask({ text, maskRegions, className }: PiiMaskProps) {
         previousRegionsRef.current = maskRegions;
     }, [maskRegions]);
 
-    const toggleReveal = useCallback((regionKey: string) => {
-        // Clear any existing timeout
-        if (debounceTimeoutRef.current) {
-            clearTimeout(debounceTimeoutRef.current);
-        }
+    const toggleReveal = useCallback(
+        (regionKey: string, piiType: string) => {
+            // Clear any existing timeout
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
 
-        // Debounce rapid clicks (100ms)
-        debounceTimeoutRef.current = setTimeout(() => {
-            setRevealedRegions((prev) => {
-                const next = new Set(prev);
-                if (next.has(regionKey)) {
-                    next.delete(regionKey);
-                } else {
-                    next.add(regionKey);
-                }
-                return next;
-            });
-        }, 100);
-    }, []);
+            // Debounce rapid clicks (100ms)
+            debounceTimeoutRef.current = setTimeout(() => {
+                setRevealedRegions((prev) => {
+                    const next = new Set(prev);
+                    const isRevealing = !next.has(regionKey);
+
+                    if (next.has(regionKey)) {
+                        next.delete(regionKey);
+                    } else {
+                        next.add(regionKey);
+                    }
+
+                    // Log unmask action for audit (AC4, NFR3)
+                    // Only log reveal actions (not hide) and only if messageId is provided
+                    if (isRevealing && messageId) {
+                        logUnmaskMutation.mutate(
+                            {
+                                messageId,
+                                piiType,
+                                action: 'reveal',
+                            },
+                            {
+                                // Silent error handling - don't break UI on logging failures
+                                onError: () => {
+                                    // Gracefully ignore logging errors (NFR2)
+                                },
+                            },
+                        );
+                    }
+
+                    return next;
+                });
+            }, 100);
+        },
+        [messageId, logUnmaskMutation],
+    );
 
     // Sort regions by start offset
     const sortedRegions = useMemo(() => [...maskRegions].sort((a, b) => a.startOffset - b.startOffset), [maskRegions]);
@@ -141,7 +171,10 @@ export function PiiMask({ text, maskRegions, className }: PiiMaskProps) {
                                 // Revealed state: no blur
                                 isRevealed && ['blur-0', 'bg-transparent', 'border-transparent'],
                             )}
-                            onClick={() => toggleReveal(part.regionKey!)}
+                            onClick={() => {
+                                const region = maskRegions.find((r) => `${r.startOffset}-${r.endOffset}` === part.regionKey);
+                                toggleReveal(part.regionKey!, region?.piiType ?? 'unknown');
+                            }}
                             onMouseEnter={() => setHoveredRegion(part.regionKey)}
                             onMouseLeave={() => setHoveredRegion(null)}
                             title={

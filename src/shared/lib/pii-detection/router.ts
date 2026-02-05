@@ -8,6 +8,7 @@ import {
 } from './persistence';
 import { getPiiDetectionCostsByUser, getPiiDetectionCostsByConversation } from './cost-tracking';
 import { PII_TYPES } from 'src/shared/config/env/server';
+import { logger } from 'src/shared/lib/logger';
 
 export const piiDetectionRouter = createTRPCRouter({
     /**
@@ -133,5 +134,54 @@ export const piiDetectionRouter = createTRPCRouter({
             }
 
             return getPiiDetectionCostsByConversation(input.conversationId, input.startDate, input.endDate);
+        }),
+
+    /**
+     * Log PII unmask action for audit (AC4, NFR3)
+     * Only authenticated users can unmask their own PII
+     */
+    logUnmask: protectedProcedure
+        .input(
+            z.object({
+                messageId: z.string().cuid(),
+                piiType: z.string(),
+                action: z.enum(['reveal', 'hide']),
+            }),
+        )
+        .mutation(async ({ ctx, input }) => {
+            // Verify message belongs to user's conversation (authentication check)
+            const { prisma } = await import('src/shared/lib/prisma');
+            const message = await prisma.message.findFirst({
+                where: {
+                    id: input.messageId,
+                    conversation: {
+                        userId: ctx.userId,
+                    },
+                },
+                select: {
+                    id: true,
+                    conversationId: true,
+                },
+            });
+
+            if (!message) {
+                throw new Error('Message not found or access denied');
+            }
+
+            // Log unmask action for audit (AC4)
+            // Never log original PII values
+            logger.info(
+                {
+                    userId: ctx.userId,
+                    messageId: input.messageId,
+                    conversationId: message.conversationId,
+                    piiType: input.piiType,
+                    action: input.action,
+                    timestamp: new Date().toISOString(),
+                },
+                'PII unmask action',
+            );
+
+            return { success: true };
         }),
 });

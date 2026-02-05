@@ -31,6 +31,36 @@ type SendMessageOptions = {
     onPiiMask?: (region: PiiMaskRegion) => void;
 };
 
+/**
+ * Validate pii_mask event fields
+ * Invalid events are silently ignored (graceful degradation, NFR2)
+ */
+function isValidPiiMaskEvent(event: unknown): event is {
+    type: 'pii_mask';
+    startOffset: number;
+    endOffset: number;
+    piiType: string;
+    originalLength: number;
+} {
+    if (!event || typeof event !== 'object') return false;
+    const e = event as Record<string, unknown>;
+
+    return (
+        e.type === 'pii_mask' &&
+        typeof e.startOffset === 'number' &&
+        typeof e.endOffset === 'number' &&
+        typeof e.piiType === 'string' &&
+        typeof e.originalLength === 'number' &&
+        Number.isInteger(e.startOffset) &&
+        Number.isInteger(e.endOffset) &&
+        Number.isInteger(e.originalLength) &&
+        e.startOffset >= 0 &&
+        e.endOffset > e.startOffset &&
+        e.originalLength > 0 &&
+        e.piiType.length > 0
+    );
+}
+
 export function useStreamMessage() {
     const [state, setState] = useState<StreamState>({
         isStreaming: false,
@@ -122,6 +152,12 @@ export function useStreamMessage() {
                                     });
                                     onError?.(event.error);
                                 } else if (event.type === 'pii_mask') {
+                                    // Validate pii_mask event fields (NFR2: invalid metadata safely ignored)
+                                    if (!isValidPiiMaskEvent(event)) {
+                                        // Silently ignore invalid pii_mask events (graceful degradation)
+                                        continue;
+                                    }
+
                                     // PII mask event - track mask regions for UI rendering
                                     const region: PiiMaskRegion = {
                                         startOffset: event.startOffset,
@@ -136,7 +172,8 @@ export function useStreamMessage() {
                                     onPiiMask?.(region);
                                 }
                             } catch (e) {
-                                console.error('Failed to parse SSE message:', e);
+                                // Silently ignore parse errors (NFR2: graceful degradation)
+                                // Stream continues without masking on error
                             }
                         }
                     }

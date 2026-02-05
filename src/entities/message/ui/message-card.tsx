@@ -12,6 +12,7 @@ export type MessageCardProps = {
     tokenCount?: number;
     className?: string;
     piiMaskRegions?: PiiMaskRegion[];
+    messageId?: string; // For logging unmask actions
 };
 
 export function MessageCard({
@@ -21,6 +22,7 @@ export function MessageCard({
     tokenCount,
     className,
     piiMaskRegions = [],
+    messageId,
 }: MessageCardProps) {
     const t = useTranslations('chat');
     const isUser = role === 'user';
@@ -69,7 +71,7 @@ export function MessageCard({
                         </div>
                         <div className="text-sm leading-relaxed break-words whitespace-pre-wrap">
                             {piiMaskRegions.length > 0 ? (
-                                <PiiMask text={content} maskRegions={piiMaskRegions} />
+                                <PiiMask text={content} maskRegions={piiMaskRegions} messageId={messageId} />
                             ) : (
                                 <p>{content}</p>
                             )}
