@@ -26,6 +26,7 @@ model User {
   accounts      Account[]
   conversations Conversation[]
   tokenUsages   TokenUsage[]
+  piiDetectionCosts PiiDetectionCost[]
 }
 
 model Session {
@@ -67,6 +68,7 @@ model Conversation {
   updatedAt   DateTime  @updatedAt
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages    Message[]
+  piiDetectionCosts PiiDetectionCost[]
 
   @@index([userId])
   @@index([createdAt])
@@ -116,5 +118,26 @@ model TokenUsage {
 
   @@unique([userId, date])
   @@index([userId])
+  @@index([date])
+}
+
+// PII detection cost tracking (separate from user token quotas)
+model PiiDetectionCost {
+  id             String       @id @default(cuid())
+  userId         String?      // Optional: track per user
+  conversationId String?      // Optional: track per conversation
+  date           DateTime     @db.Date // Daily aggregate, date only
+  requestCount   Int          @default(0) // Number of API calls
+  totalTokens    Int          @default(0) // Total tokens used
+  totalLatencyMs Int          @default(0) // Total latency in milliseconds
+  errorCount     Int          @default(0) // Number of errors
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId, date])
+  @@index([userId])
+  @@index([conversationId])
   @@index([date])
 }

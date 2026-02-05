@@ -197,7 +197,10 @@ export async function POST(request: NextRequest) {
 
             try {
                 const piiService = getPiiDetectionService();
-                const detectionResult = await piiService.detectPii(text);
+                const detectionResult = await piiService.detectPii(text, {
+                    userId,
+                    conversationId,
+                });
 
                 if (detectionResult.success && detectionResult.detections.length > 0) {
                     // Emit pii_mask events for retroactive masking
@@ -258,7 +261,7 @@ export async function POST(request: NextRequest) {
                                     try {
                                         const piiService = getPiiDetectionService();
                                         const detectionResult = await piiService
-                                            .detectPii(contentBuffer)
+                                            .detectPii(contentBuffer, { userId, conversationId })
                                             .catch((error) => {
                                                 logger.error({ error }, 'PII detection failed in batch');
                                                 return { detections: [], success: false };
@@ -370,10 +373,12 @@ export async function POST(request: NextRequest) {
                         if (piiEnabled) {
                             try {
                                 const piiService = getPiiDetectionService();
-                                const detectionResult = await piiService.detectPii(contentBuffer).catch(() => ({
-                                    detections: [],
-                                    success: false,
-                                }));
+                                const detectionResult = await piiService
+                                    .detectPii(contentBuffer, { userId, conversationId })
+                                    .catch(() => ({
+                                        detections: [],
+                                        success: false,
+                                    }));
 
                                 if (detectionResult.success && detectionResult.detections.length > 0) {
                                     // Adjust detection offsets to be absolute (relative to full message)

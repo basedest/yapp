@@ -8,3 +8,9 @@ export {
     getPiiDetectionsByUser,
     queryPiiDetections,
 } from './persistence';
+export {
+    trackPiiDetectionCost,
+    getPiiDetectionCostsByUser,
+    getPiiDetectionCostsByConversation,
+    getAggregatePiiDetectionCosts,
+} from './cost-tracking';

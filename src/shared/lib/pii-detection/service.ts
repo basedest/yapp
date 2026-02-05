@@ -4,6 +4,7 @@ import { logger } from 'src/shared/lib/logger';
 import { getOpenRouterClient, type ChatMessage } from 'src/shared/lib/openrouter';
 import { buildDetectionPrompt, buildSystemPrompt } from './prompts';
 import type { PiiDetectionResponse, PiiDetectionResult } from './types';
+import { trackPiiDetectionCost } from './cost-tracking';
 
 /**
  * PII Detection Service
@@ -24,27 +25,83 @@ class PiiDetectionService {
     /**
      * Detect PII in accumulated text
      * @param text - Accumulated text to scan for PII
+     * @param options - Optional tracking parameters (userId, conversationId)
      * @returns Detection results with offsets and types
      */
-    async detectPii(text: string): Promise<PiiDetectionResponse> {
+    async detectPii(
+        text: string,
+        options?: { userId?: string; conversationId?: string },
+    ): Promise<PiiDetectionResponse> {
         if (!text.trim()) {
             return { detections: [], success: true };
         }
 
+        const startTime = Date.now();
+        let tokens = 0;
+
         try {
-            const detections = await this.callDetectionApi(text);
+            const detections = await this.callDetectionApi(text, (usage) => {
+                tokens = usage?.total_tokens ?? 0;
+            });
+            const success = true;
+            const latencyMs = Date.now() - startTime;
+
+            // Track cost (non-blocking)
+            trackPiiDetectionCost({
+                userId: options?.userId,
+                conversationId: options?.conversationId,
+                tokens,
+                latencyMs,
+                success,
+            }).catch((error) => {
+                logger.error({ error }, 'Failed to track PII detection cost');
+            });
+
+            // Log all detection API calls
+            logger.info(
+                {
+                    userId: options?.userId,
+                    conversationId: options?.conversationId,
+                    textLength: text.length,
+                    tokens,
+                    latencyMs,
+                    detectionCount: detections.length,
+                },
+                'PII detection API call',
+            );
+
             return {
                 detections,
                 success: true,
             };
         } catch (error) {
+            const success = false;
+            const latencyMs = Date.now() - startTime;
+
+            // Track cost for failed request (non-blocking)
+            trackPiiDetectionCost({
+                userId: options?.userId,
+                conversationId: options?.conversationId,
+                tokens,
+                latencyMs,
+                success,
+            }).catch((trackError) => {
+                logger.error({ error: trackError }, 'Failed to track PII detection cost');
+            });
+
+            // Log all detection API calls (including failures)
             logger.error(
                 {
                     error: error instanceof Error ? error.message : String(error),
+                    userId: options?.userId,
+                    conversationId: options?.conversationId,
                     textLength: text.length,
+                    tokens,
+                    latencyMs,
                 },
-                'PII detection failed',
+                'PII detection API call failed',
             );
+
             return {
                 detections: [],
                 success: false,
@@ -55,8 +112,12 @@ class PiiDetectionService {
 
     /**
      * Call OpenRouter API for PII detection with timeout
+     * @param onUsage - Callback to receive token usage information
      */
-    private async callDetectionApi(text: string): Promise<PiiDetectionResult[]> {
+    private async callDetectionApi(
+        text: string,
+        onUsage?: (usage: { total_tokens: number } | undefined) => void,
+    ): Promise<PiiDetectionResult[]> {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
 
@@ -81,6 +142,9 @@ class PiiDetectionService {
             });
 
             clearTimeout(timeoutId);
+
+            // Report usage if callback provided
+            onUsage?.(response.usage);
 
             const content = response.choices[0]?.message?.content;
 

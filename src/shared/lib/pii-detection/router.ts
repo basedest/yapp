@@ -6,6 +6,7 @@ import {
     getPiiDetectionsByUser,
     queryPiiDetections,
 } from './persistence';
+import { getPiiDetectionCostsByUser, getPiiDetectionCostsByConversation } from './cost-tracking';
 import { PII_TYPES } from 'src/shared/config/env/server';
 
 export const piiDetectionRouter = createTRPCRouter({
@@ -90,5 +91,47 @@ export const piiDetectionRouter = createTRPCRouter({
                 startDate: input.startDate,
                 endDate: input.endDate,
             });
+        }),
+
+    /**
+     * Get PII detection costs for the current user
+     */
+    getCosts: protectedProcedure
+        .input(
+            z.object({
+                startDate: z.date().optional(),
+                endDate: z.date().optional(),
+            }),
+        )
+        .query(async ({ ctx, input }) => {
+            return getPiiDetectionCostsByUser(ctx.userId, input.startDate, input.endDate);
+        }),
+
+    /**
+     * Get PII detection costs for a conversation
+     */
+    getCostsByConversation: protectedProcedure
+        .input(
+            z.object({
+                conversationId: z.string().cuid(),
+                startDate: z.date().optional(),
+                endDate: z.date().optional(),
+            }),
+        )
+        .query(async ({ ctx, input }) => {
+            // Verify conversation belongs to user
+            const { prisma } = await import('src/shared/lib/prisma');
+            const conversation = await prisma.conversation.findFirst({
+                where: {
+                    id: input.conversationId,
+                    userId: ctx.userId,
+                },
+            });
+
+            if (!conversation) {
+                throw new Error('Conversation not found or access denied');
+            }
+
+            return getPiiDetectionCostsByConversation(input.conversationId, input.startDate, input.endDate);
         }),
 });
