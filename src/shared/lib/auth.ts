@@ -3,7 +3,7 @@ import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 import { prisma } from 'src/shared/lib/prisma';
 import { logger } from 'src/shared/lib/logger';
-import { getServerConfig } from '../config/env';
+import { getServerConfig } from 'src/shared/config/env';
 
 const config = getServerConfig();
 

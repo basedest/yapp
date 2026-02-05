@@ -2,11 +2,6 @@ import 'server-only';
 import { getServerConfig } from '../../config/env';
 import { logger } from '../logger';
 
-type RequestRecord = {
-    userId: string;
-    timestamps: number[];
-};
-
 /**
  * In-memory rate limiter using sliding window algorithm
  * Tracks requests per user and enforces per-minute limits

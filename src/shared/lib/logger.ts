@@ -1,5 +1,5 @@
 import pino from 'pino';
-import { getServerConfig } from '../config/env';
+import { getServerConfig } from 'src/shared/config/env';
 
 const config = getServerConfig();
 

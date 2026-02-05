@@ -20,6 +20,18 @@ const eslintConfig = defineConfig([
                 },
             ],
             'react/display-name': 'off',
+            // Enforce path aliases instead of relative parent imports
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            group: ['../*'],
+                            message: 'Use path aliases (~/... or src/...) instead of relative parent imports (../)',
+                        },
+                    ],
+                },
+            ],
         },
     },
     // FSD layer boundaries: shared cannot import from higher layers

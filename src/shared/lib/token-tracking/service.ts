@@ -1,7 +1,7 @@
 import 'server-only';
-import { prisma } from '../prisma';
-import { getServerConfig } from '../../config/env';
-import { logger } from '../logger';
+import { prisma } from 'src/shared/lib/prisma';
+import { getServerConfig } from 'src/shared/config/env';
+import { logger } from 'src/shared/lib/logger';
 
 export type TokenUsageResult = {
     used: number;

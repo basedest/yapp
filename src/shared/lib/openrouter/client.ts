@@ -1,6 +1,6 @@
 import 'server-only';
-import { getServerConfig } from '../../config/env';
-import { logger } from '../logger';
+import { getServerConfig } from 'src/shared/config/env';
+import { logger } from 'src/shared/lib/logger';
 
 export type ChatMessage = {
     role: 'system' | 'user' | 'assistant';
