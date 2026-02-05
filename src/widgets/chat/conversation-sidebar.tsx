@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { ConversationCard } from 'src/entities/conversation/ui';
-import { DeleteConversation } from 'src/features/conversation/delete-conversation';
+import { ConversationItemMenu } from 'src/features/conversation/conversation-item-menu';
 import { TokenUsageDisplay } from 'src/widgets/token-usage';
 import { Button } from 'src/shared/ui/button';
 
@@ -42,11 +42,14 @@ export function ConversationSidebar({
                         {t('newChat')}
                     </Button>
                 </div>
-                <div className="space-y-2">
+                <div className="divide-y overflow-hidden rounded-md border">
                     {conversations.length > 0 ? (
                         conversations.map((conv) => (
-                            <div key={conv.id} className="group relative flex items-start gap-1">
-                                <div className="flex-1">
+                            <div
+                                key={conv.id}
+                                className="group relative flex min-h-0 items-stretch border-transparent first:rounded-t-md last:rounded-b-md"
+                            >
+                                <div className="min-w-0 flex-1">
                                     <ConversationCard
                                         id={conv.id}
                                         title={conv.title}
@@ -57,18 +60,18 @@ export function ConversationSidebar({
                                         onClick={() => onConversationSelect?.(conv.id)}
                                     />
                                 </div>
-                                {onDelete && (
-                                    <DeleteConversation
+                                <div className="flex shrink-0 items-center pr-1">
+                                    <ConversationItemMenu
                                         conversationId={conv.id}
                                         conversationTitle={conv.title}
                                         onDelete={onDelete}
                                         isDeleting={isDeletingId === conv.id}
                                     />
-                                )}
+                                </div>
                             </div>
                         ))
                     ) : (
-                        <p className="text-muted-foreground text-center text-sm">{t('noConversations')}</p>
+                        <p className="text-muted-foreground border-0 p-4 text-center text-sm">{t('noConversations')}</p>
                     )}
                 </div>
             </div>

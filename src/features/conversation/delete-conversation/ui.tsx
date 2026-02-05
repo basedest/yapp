@@ -19,6 +19,9 @@ type DeleteConversationProps = {
     conversationTitle: string;
     onDelete: (conversationId: string) => void;
     isDeleting?: boolean;
+    /** When set, dialog is controlled and no trigger is rendered (e.g. opened from a dropdown). */
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 };
 
 export function DeleteConversation({
@@ -26,9 +29,14 @@ export function DeleteConversation({
     conversationTitle,
     onDelete,
     isDeleting,
+    open: controlledOpen,
+    onOpenChange: controlledOnOpenChange,
 }: DeleteConversationProps) {
     const t = useTranslations('chat');
-    const [open, setOpen] = useState(false);
+    const [internalOpen, setInternalOpen] = useState(false);
+    const isControlled = controlledOpen !== undefined && controlledOnOpenChange !== undefined;
+    const open = isControlled ? controlledOpen : internalOpen;
+    const setOpen = isControlled ? controlledOnOpenChange! : setInternalOpen;
 
     const handleDelete = () => {
         onDelete(conversationId);
@@ -37,12 +45,14 @@ export function DeleteConversation({
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
-                    <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">{t('deleteConversation')}</span>
-                </Button>
-            </DialogTrigger>
+            {!isControlled && (
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">{t('deleteConversation')}</span>
+                    </Button>
+                </DialogTrigger>
+            )}
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{t('deleteConfirmTitle')}</DialogTitle>

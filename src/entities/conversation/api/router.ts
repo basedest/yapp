@@ -112,6 +112,49 @@ export const conversationRouter = createTRPCRouter({
         }),
 
     /**
+     * Update a conversation (e.g. rename title)
+     */
+    update: protectedProcedure
+        .input(
+            z.object({
+                id: z.string().cuid(),
+                title: z.string().min(1).max(100),
+            }),
+        )
+        .mutation(async ({ ctx, input }) => {
+            const config = getServerConfig();
+            const conversation = await prisma.conversation.findUnique({
+                where: { id: input.id },
+                select: { userId: true },
+            });
+
+            if (!conversation) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Conversation not found',
+                });
+            }
+
+            if (conversation.userId !== ctx.userId) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'You do not have permission to update this conversation',
+                });
+            }
+
+            const updated = await prisma.conversation.update({
+                where: { id: input.id },
+                data: {
+                    title: input.title.slice(0, config.chat.maxConversationTitleLength),
+                },
+            });
+
+            logger.info({ conversationId: input.id, userId: ctx.userId }, 'Conversation updated');
+
+            return updated;
+        }),
+
+    /**
      * Delete a conversation (cascade deletes messages)
      */
     delete: protectedProcedure

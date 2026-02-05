@@ -1,7 +1,6 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'src/shared/ui/card';
 import { cn } from 'src/shared/lib/utils';
 
 export type ConversationCardProps = {
@@ -31,37 +30,30 @@ export function ConversationCard({
         year: updatedAt.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
     });
 
+    const meta: string[] = [formattedDate];
+    if (messageCount !== undefined) {
+        meta.push(messageCount === 1 ? `1 ${t('message')}` : `${messageCount} ${t('messages')}`);
+    }
+    if (totalTokens !== undefined && totalTokens > 0) {
+        meta.push(`${totalTokens.toLocaleString()} ${t('tokens')}`);
+    }
+    const metaLine = meta.join(' · ');
+
     return (
-        <Card
+        <button
+            type="button"
             className={cn(
-                'hover:bg-accent cursor-pointer transition-colors',
-                isActive && 'border-primary bg-accent',
+                'flex w-full flex-col gap-0.5 rounded-sm px-2 py-1.5 text-left transition-colors',
+                'hover:bg-accent/80',
+                isActive && 'bg-accent',
                 className,
             )}
             onClick={onClick}
         >
-            <CardHeader className="pb-3">
-                <CardTitle className="line-clamp-2 text-base leading-tight font-semibold">{title}</CardTitle>
-                <CardDescription className="text-xs">{formattedDate}</CardDescription>
-            </CardHeader>
+            <span className="line-clamp-2 text-sm font-medium leading-snug">{title}</span>
             {(messageCount !== undefined || totalTokens !== undefined) && (
-                <CardContent className="pb-4">
-                    <div className="text-muted-foreground flex items-center gap-4 text-xs">
-                        {messageCount !== undefined && (
-                            <div className="flex items-center gap-1">
-                                <span className="font-medium">{messageCount}</span>
-                                <span>{messageCount === 1 ? t('message') : t('messages')}</span>
-                            </div>
-                        )}
-                        {totalTokens !== undefined && totalTokens > 0 && (
-                            <div className="flex items-center gap-1">
-                                <span className="font-medium">{totalTokens.toLocaleString()}</span>
-                                <span>{t('tokens')}</span>
-                            </div>
-                        )}
-                    </div>
-                </CardContent>
+                <span className="text-muted-foreground truncate text-xs">{metaLine}</span>
             )}
-        </Card>
+        </button>
     );
 }
