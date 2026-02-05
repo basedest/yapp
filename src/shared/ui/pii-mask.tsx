@@ -40,6 +40,8 @@ export function PiiMask({ text, maskRegions, className, messageId }: PiiMaskProp
         const currentKeys = new Set(maskRegions.map((r) => `${r.startOffset}-${r.endOffset}`));
         const newKeys = new Set([...currentKeys].filter((key) => !previousKeys.has(key)));
 
+        previousRegionsRef.current = maskRegions;
+
         if (newKeys.size > 0) {
             setNewlyMaskedRegions(newKeys);
             // Clear animation state after animation completes (250ms)
@@ -48,8 +50,6 @@ export function PiiMask({ text, maskRegions, className, messageId }: PiiMaskProp
             }, 250);
             return () => clearTimeout(timeout);
         }
-
-        previousRegionsRef.current = maskRegions;
     }, [maskRegions]);
 
     const toggleReveal = useCallback(
@@ -172,7 +172,9 @@ export function PiiMask({ text, maskRegions, className, messageId }: PiiMaskProp
                                 isRevealed && ['blur-0', 'bg-transparent', 'border-transparent'],
                             )}
                             onClick={() => {
-                                const region = maskRegions.find((r) => `${r.startOffset}-${r.endOffset}` === part.regionKey);
+                                const region = maskRegions.find(
+                                    (r) => `${r.startOffset}-${r.endOffset}` === part.regionKey,
+                                );
                                 toggleReveal(part.regionKey!, region?.piiType ?? 'unknown');
                             }}
                             onMouseEnter={() => setHoveredRegion(part.regionKey)}

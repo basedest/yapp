@@ -15,6 +15,32 @@ export type PiiMaskRegion = {
     originalLength: number;
 };
 
+/**
+ * Merge a new PII mask region into existing regions (out-of-order safe).
+ * Sorts by startOffset and merges overlapping/adjacent intervals so the list
+ * stays canonical and avoids double-masking or flicker (FR-4, FR-6).
+ */
+function mergePiiMaskRegions(existing: PiiMaskRegion[], newRegion: PiiMaskRegion): PiiMaskRegion[] {
+    const combined = [...existing, newRegion].sort((a, b) => a.startOffset - b.startOffset);
+    if (combined.length === 0) return [];
+    const merged: PiiMaskRegion[] = [];
+    let current = { ...combined[0] };
+
+    for (let i = 1; i < combined.length; i++) {
+        const next = combined[i];
+        if (next.startOffset <= current.endOffset) {
+            // Overlapping or adjacent: extend current
+            current.endOffset = Math.max(current.endOffset, next.endOffset);
+            current.originalLength = current.endOffset - current.startOffset;
+        } else {
+            merged.push(current);
+            current = { ...next };
+        }
+    }
+    merged.push(current);
+    return merged;
+}
+
 type StreamState = {
     isStreaming: boolean;
     streamingContent: string;
@@ -158,7 +184,7 @@ export function useStreamMessage() {
                                         continue;
                                     }
 
-                                    // PII mask event - track mask regions for UI rendering
+                                    // Merge region into list (out-of-order safe; overlapping regions merged)
                                     const region: PiiMaskRegion = {
                                         startOffset: event.startOffset,
                                         endOffset: event.endOffset,
@@ -167,11 +193,11 @@ export function useStreamMessage() {
                                     };
                                     setState((prev) => ({
                                         ...prev,
-                                        piiMaskRegions: [...prev.piiMaskRegions, region],
+                                        piiMaskRegions: mergePiiMaskRegions(prev.piiMaskRegions, region),
                                     }));
                                     onPiiMask?.(region);
                                 }
-                            } catch (e) {
+                            } catch {
                                 // Silently ignore parse errors (NFR2: graceful degradation)
                                 // Stream continues without masking on error
                             }

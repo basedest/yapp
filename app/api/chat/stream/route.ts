@@ -175,6 +175,7 @@ export async function POST(request: NextRequest) {
         let contentBuffer = ''; // Buffer for batch detection (original unmasked content)
         let sentOriginalLength = 0; // Track length of original content sent (for retroactive masking offsets)
         const allDetections: PiiDetectionResult[] = []; // Track all detections for final audit log
+        const detectionPromises: Promise<void>[] = []; // Await before persist so all detections are in allDetections
 
         // Helper to send SSE event
         const sendEvent = (
@@ -185,60 +186,63 @@ export async function POST(request: NextRequest) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
         };
 
-        // Async PII detection for retroactive masking (non-blocking)
-        const runRetroactiveDetection = async (
+        // Run PII detection asynchronously (non-blocking). Emits pii_mask events when done.
+        // Content is already sent; this only enqueues mask metadata for the client.
+        // Returns a promise so we can await all in-flight detections before persisting (FR-7).
+        const runDetectionAsync = (
             text: string,
             baseOffset: number,
             controller: ReadableStreamDefaultController<Uint8Array>,
             encoder: TextEncoder,
-        ) => {
+        ): Promise<void> | void => {
             if (!piiEnabled || !text.trim()) {
                 return;
             }
 
-            try {
-                const piiService = getPiiDetectionService();
-                const detectionResult = await piiService.detectPii(text, {
-                    userId,
-                    conversationId,
-                });
-
-                if (detectionResult.success && detectionResult.detections.length > 0) {
-                    // Emit pii_mask events for retroactive masking
-                    for (const detection of detectionResult.detections) {
-                        sendEvent(controller, encoder, {
-                            type: 'pii_mask',
-                            startOffset: baseOffset + detection.startOffset,
-                            endOffset: baseOffset + detection.endOffset,
-                            piiType: detection.piiType,
-                            originalLength: detection.endOffset - detection.startOffset,
-                        });
-                    }
-
-                    // Log detection for audit (masked representation only)
-                    const maskedText = maskPiiInText(text, detectionResult.detections);
-                    logger.info(
-                        {
-                            conversationId,
-                            userId,
-                            detectionCount: detectionResult.detections.length,
-                            piiTypes: detectionResult.detections.map((d) => d.piiType),
-                            maskedText,
-                        },
-                        'PII detected retroactively in stream',
-                    );
-                }
-            } catch (error) {
-                // Never crash stream on detection failures
-                logger.error(
-                    {
-                        error,
-                        conversationId,
+            const promise = (async () => {
+                try {
+                    const piiService = getPiiDetectionService();
+                    const detectionResult = await piiService.detectPii(text, {
                         userId,
-                    },
-                    'Retroactive PII detection error, continuing stream',
-                );
-            }
+                        conversationId,
+                    });
+
+                    if (detectionResult.success && detectionResult.detections.length > 0) {
+                        const adjustedDetections: PiiDetectionResult[] = detectionResult.detections.map((d) => ({
+                            ...d,
+                            startOffset: baseOffset + d.startOffset,
+                            endOffset: baseOffset + d.endOffset,
+                        }));
+                        allDetections.push(...adjustedDetections);
+
+                        for (const detection of adjustedDetections) {
+                            sendEvent(controller, encoder, {
+                                type: 'pii_mask',
+                                startOffset: detection.startOffset,
+                                endOffset: detection.endOffset,
+                                piiType: detection.piiType,
+                                originalLength: detection.endOffset - detection.startOffset,
+                            });
+                        }
+
+                        const maskedText = maskPiiInText(text, detectionResult.detections);
+                        logger.info(
+                            {
+                                conversationId,
+                                userId,
+                                detectionCount: detectionResult.detections.length,
+                                piiTypes: detectionResult.detections.map((d) => d.piiType),
+                                maskedText,
+                            },
+                            'PII detected asynchronously in stream',
+                        );
+                    }
+                } catch (error) {
+                    logger.error({ error, conversationId, userId }, 'Async PII detection error, continuing stream');
+                }
+            })();
+            detectionPromises.push(promise);
+            return promise;
         };
 
         const stream = new ReadableStream({
@@ -246,132 +250,30 @@ export async function POST(request: NextRequest) {
                 const encoder = new TextEncoder();
 
                 try {
-                    // Stream AI response
+                    // Stream AI response: send each chunk immediately (FR-1); PII detection runs async.
                     for await (const chunk of aiClient.createChatCompletionStream(messages)) {
                         if (chunk.choices[0]?.delta?.content) {
                             const content = chunk.choices[0].delta.content;
                             assistantContent += content;
-                            chunkCount++;
+
+                            // Send content to client immediately (no buffer-for-detection)
+                            sendEvent(controller, encoder, {
+                                type: 'content',
+                                content,
+                            });
+                            sentOriginalLength += content.length;
 
                             if (piiEnabled) {
-                                // Accumulate content in buffer for batch detection
                                 contentBuffer += content;
+                                chunkCount++;
 
-                                // Run PII detection after every N chunks
+                                // Trigger async PII detection after every N chunks (non-blocking)
                                 if (chunkCount % piiConfig.chunkBatchSize === 0 && contentBuffer.length > 0) {
-                                    try {
-                                        const piiService = getPiiDetectionService();
-                                        const detectionResult = await piiService
-                                            .detectPii(contentBuffer, { userId, conversationId })
-                                            .catch((error) => {
-                                                logger.error({ error }, 'PII detection failed in batch');
-                                                return { detections: [], success: false };
-                                            });
-
-                                        if (detectionResult.success && detectionResult.detections.length > 0) {
-                                            // Adjust detection offsets to be absolute (relative to full message)
-                                            const baseOffset = sentOriginalLength;
-                                            const adjustedDetections: PiiDetectionResult[] =
-                                                detectionResult.detections.map((detection) => ({
-                                                    ...detection,
-                                                    startOffset: baseOffset + detection.startOffset,
-                                                    endOffset: baseOffset + detection.endOffset,
-                                                }));
-                                            allDetections.push(...adjustedDetections);
-
-                                            // DEBUG: Log detection details
-                                            logger.debug({
-                                                baseOffset,
-                                                sentOriginalLength,
-                                                bufferLength: contentBuffer.length,
-                                                detections: adjustedDetections.map(d => ({
-                                                    type: d.piiType,
-                                                    start: d.startOffset,
-                                                    end: d.endOffset,
-                                                    text: contentBuffer.slice(d.startOffset - baseOffset, d.endOffset - baseOffset)
-                                                }))
-                                            }, 'PII batch detection offsets');
-
-                                            // Send original buffer (frontend will apply masking via spoiler effect)
-                                            // PII is only masked when saving to database, not during streaming
-                                            sendEvent(controller, encoder, {
-                                                type: 'content',
-                                                content: contentBuffer,
-                                            });
-
-                                            // Emit pii_mask events for detections in this batch
-                                            for (const detection of adjustedDetections) {
-                                                sendEvent(controller, encoder, {
-                                                    type: 'pii_mask',
-                                                    startOffset: detection.startOffset,
-                                                    endOffset: detection.endOffset,
-                                                    piiType: detection.piiType,
-                                                    originalLength: detection.endOffset - detection.startOffset,
-                                                });
-                                            }
-
-                                            // Update sent length (using original buffer length)
-                                            sentOriginalLength += contentBuffer.length;
-
-                                            // Log detection for audit (mask PII for logs only, never log original)
-                                            const maskedForLog = maskPiiInText(
-                                                contentBuffer,
-                                                detectionResult.detections,
-                                            );
-                                            logger.info(
-                                                {
-                                                    conversationId,
-                                                    userId,
-                                                    detectionCount: detectionResult.detections.length,
-                                                    piiTypes: detectionResult.detections.map((d) => d.piiType),
-                                                    maskedText: maskedForLog,
-                                                },
-                                                'PII detected in stream batch',
-                                            );
-                                        } else {
-                                            // No PII detected, send buffer as-is
-                                            sendEvent(controller, encoder, {
-                                                type: 'content',
-                                                content: contentBuffer,
-                                            });
-                                            sentOriginalLength += contentBuffer.length;
-                                        }
-
-                                        // Trigger retroactive detection on already-sent original content (non-blocking)
-                                        // This checks for PII that might have been missed in earlier batches
-                                        if (sentOriginalLength > 0 && assistantContent.length >= sentOriginalLength) {
-                                            const sentOriginalContent = assistantContent.slice(0, sentOriginalLength);
-                                            runRetroactiveDetection(sentOriginalContent, 0, controller, encoder).catch(
-                                                (error) => {
-                                                    logger.error(
-                                                        { error },
-                                                        'Background retroactive PII detection failed',
-                                                    );
-                                                },
-                                            );
-                                        }
-
-                                        // Reset buffer
-                                        contentBuffer = '';
-                                    } catch (error) {
-                                        // Never crash stream on detection failures
-                                        logger.error({ error }, 'PII detection error, sending content unmasked');
-                                        sendEvent(controller, encoder, {
-                                            type: 'content',
-                                            content: contentBuffer,
-                                        });
-                                        sentOriginalLength += contentBuffer.length;
-                                        contentBuffer = '';
-                                    }
+                                    const batch = contentBuffer;
+                                    const baseOffset = sentOriginalLength - contentBuffer.length;
+                                    contentBuffer = '';
+                                    runDetectionAsync(batch, baseOffset, controller, encoder);
                                 }
-                                // If not a batch boundary, content stays in buffer (will be sent on next batch or at end)
-                            } else {
-                                // PII detection disabled, send content immediately
-                                sendEvent(controller, encoder, {
-                                    type: 'content',
-                                    content,
-                                });
-                                sentOriginalLength += content.length;
                             }
                         }
 
@@ -382,85 +284,54 @@ export async function POST(request: NextRequest) {
                         }
                     }
 
-                    // Handle remaining content in buffer after stream ends
-                    if (contentBuffer.length > 0) {
-                        if (piiEnabled) {
-                            try {
-                                const piiService = getPiiDetectionService();
-                                const detectionResult = await piiService
-                                    .detectPii(contentBuffer, { userId, conversationId })
-                                    .catch(() => ({
-                                        detections: [],
-                                        success: false,
-                                    }));
+                    // Final batch: run PII detection on remaining buffer (content already sent)
+                    if (piiEnabled && contentBuffer.length > 0) {
+                        const baseOffset = sentOriginalLength - contentBuffer.length;
+                        try {
+                            const piiService = getPiiDetectionService();
+                            const detectionResult = await piiService
+                                .detectPii(contentBuffer, { userId, conversationId })
+                                .catch(() => ({ detections: [], success: false }));
 
-                                if (detectionResult.success && detectionResult.detections.length > 0) {
-                                    // Adjust detection offsets to be absolute (relative to full message)
-                                    const baseOffset = sentOriginalLength;
-                                    const adjustedDetections: PiiDetectionResult[] = detectionResult.detections.map(
-                                        (detection) => ({
-                                            ...detection,
-                                            startOffset: baseOffset + detection.startOffset,
-                                            endOffset: baseOffset + detection.endOffset,
-                                        }),
-                                    );
-                                    allDetections.push(...adjustedDetections);
+                            if (detectionResult.success && detectionResult.detections.length > 0) {
+                                const adjustedDetections: PiiDetectionResult[] = detectionResult.detections.map(
+                                    (d) => ({
+                                        ...d,
+                                        startOffset: baseOffset + d.startOffset,
+                                        endOffset: baseOffset + d.endOffset,
+                                    }),
+                                );
+                                allDetections.push(...adjustedDetections);
 
-                                    // Send original buffer (frontend will apply masking via spoiler effect)
-                                    // PII is only masked when saving to database, not during streaming
+                                for (const detection of adjustedDetections) {
                                     sendEvent(controller, encoder, {
-                                        type: 'content',
-                                        content: contentBuffer,
+                                        type: 'pii_mask',
+                                        startOffset: detection.startOffset,
+                                        endOffset: detection.endOffset,
+                                        piiType: detection.piiType,
+                                        originalLength: detection.endOffset - detection.startOffset,
                                     });
-
-                                    // Emit final pii_mask events
-                                    for (const detection of adjustedDetections) {
-                                        sendEvent(controller, encoder, {
-                                            type: 'pii_mask',
-                                            startOffset: detection.startOffset,
-                                            endOffset: detection.endOffset,
-                                            piiType: detection.piiType,
-                                            originalLength: detection.endOffset - detection.startOffset,
-                                        });
-                                    }
-
-                                    sentOriginalLength += contentBuffer.length;
-
-                                    // Log final detection (mask PII for logs only, never log original)
-                                    const maskedForLog = maskPiiInText(contentBuffer, detectionResult.detections);
-                                    logger.info(
-                                        {
-                                            conversationId,
-                                            userId,
-                                            detectionCount: detectionResult.detections.length,
-                                            piiTypes: detectionResult.detections.map((d) => d.piiType),
-                                            maskedText: maskedForLog,
-                                        },
-                                        'Final PII detection in stream',
-                                    );
-                                } else {
-                                    sendEvent(controller, encoder, {
-                                        type: 'content',
-                                        content: contentBuffer,
-                                    });
-                                    sentOriginalLength += contentBuffer.length;
                                 }
-                            } catch (error) {
-                                logger.error({ error }, 'Final PII detection error, sending content unmasked');
-                                sendEvent(controller, encoder, {
-                                    type: 'content',
-                                    content: contentBuffer,
-                                });
-                                sentOriginalLength += contentBuffer.length;
+
+                                const maskedForLog = maskPiiInText(contentBuffer, detectionResult.detections);
+                                logger.info(
+                                    {
+                                        conversationId,
+                                        userId,
+                                        detectionCount: detectionResult.detections.length,
+                                        piiTypes: detectionResult.detections.map((d) => d.piiType),
+                                        maskedText: maskedForLog,
+                                    },
+                                    'Final PII detection in stream',
+                                );
                             }
-                        } else {
-                            sendEvent(controller, encoder, {
-                                type: 'content',
-                                content: contentBuffer,
-                            });
-                            sentOriginalLength += contentBuffer.length;
+                        } catch (error) {
+                            logger.error({ error }, 'Final PII detection error');
                         }
                     }
+
+                    // Wait for all in-flight PII detections so allDetections is complete before persist (FR-7)
+                    await Promise.all(detectionPromises);
 
                     // Store original content with PII - UI will apply spoiler effect using PiiDetection metadata
                     const finalContent = assistantContent;
