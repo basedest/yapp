@@ -25,6 +25,7 @@
     "dependencies": {
         "@prisma/adapter-pg": "^7.3.0",
         "@prisma/client": "7.2.0",
+        "@prisma/extension-accelerate": "^3.0.1",
         "@tanstack/react-devtools": "^0.9.4",
         "@tanstack/react-form": "^1.28.0",
         "@tanstack/react-form-devtools": "^0.2.13",

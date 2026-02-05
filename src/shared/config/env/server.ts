@@ -26,7 +26,9 @@ export type PiiFallbackWhenUnavailable = (typeof PII_FALLBACK_VALUES)[number];
 
 const rawServerEnvSchema = z.object({
     NODE_ENV: z.string().optional(),
-    DATABASE_URL: z.url().min(1, 'DATABASE_URL is required'),
+    DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+    /** Direct PostgreSQL URL for migrations when using Prisma Accelerate (prisma://). Set to same as DATABASE_URL when not using Accelerate. */
+    DIRECT_DATABASE_URL: z.string().optional(),
     BETTER_AUTH_URL: z.url().optional(),
     BETTER_AUTH_SECRET: z.string().min(32, 'BETTER_AUTH_SECRET must be at least 32 characters long'),
     OPENROUTER_API_KEY: z.string().min(1, 'OPENROUTER_API_KEY is required'),
@@ -64,10 +66,18 @@ const serverEnvSchema = rawServerEnvSchema.transform((raw): ServerConfig => {
         ? (piiFallbackRaw as PiiFallbackWhenUnavailable)
         : 'continue_without_masking';
 
+    const databaseUrl = raw.DATABASE_URL;
+    const isAccelerate = databaseUrl.startsWith('prisma://');
+    if (isAccelerate && !raw.DIRECT_DATABASE_URL?.trim()) {
+        throw new Error(
+            'DIRECT_DATABASE_URL is required when using Prisma Accelerate (DATABASE_URL starts with prisma://). Use your direct PostgreSQL URL for migrations.',
+        );
+    }
     return {
         nodeEnv,
         database: {
-            url: raw.DATABASE_URL,
+            url: databaseUrl,
+            directUrl: raw.DIRECT_DATABASE_URL?.trim(),
         },
         auth: {
             secret: raw.BETTER_AUTH_SECRET,
@@ -109,7 +119,7 @@ const serverEnvSchema = rawServerEnvSchema.transform((raw): ServerConfig => {
 
 export type ServerConfig = {
     nodeEnv: 'development' | 'production' | 'test';
-    database: { url: string };
+    database: { url: string; directUrl?: string };
     auth: { secret: string; baseUrl: string };
     ai: { openRouterApiKey: string; model: string };
     logLevel: 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'trace';
@@ -136,6 +146,7 @@ function getRawEnv(): Record<string, string | undefined> {
     return {
         NODE_ENV: process.env.NODE_ENV,
         DATABASE_URL: process.env.DATABASE_URL,
+        DIRECT_DATABASE_URL: process.env.DIRECT_DATABASE_URL,
         BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
         BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
         OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
