@@ -1,7 +1,7 @@
 import type { PiiType } from 'src/shared/config/env/server';
 
 /**
- * PII type descriptions for prompts
+ * PII type descriptions for prompts (semantic only; no offsets)
  */
 const PII_TYPE_DESCRIPTIONS: Record<PiiType, string> = {
     email: 'Email addresses (e.g., user@example.com)',
@@ -16,7 +16,23 @@ const PII_TYPE_DESCRIPTIONS: Record<PiiType, string> = {
 };
 
 /**
- * Build system prompt for PII detection
+ * Canonical placeholder per PII type. System-owned; do not ask the model for placeholders.
+ */
+export const PII_TYPE_TO_PLACEHOLDER: Record<PiiType, string> = {
+    email: '[EMAIL]',
+    phone: '[PHONE]',
+    ssn: '[SSN]',
+    credit_card: '[CREDIT_CARD]',
+    address: '[ADDRESS]',
+    full_name: '[NAME]',
+    gov_id: '[GOV_ID]',
+    ip: '[IP]',
+    dob: '[DOB]',
+};
+
+/**
+ * Build system prompt for PII detection.
+ * Model's job is semantic only: identify what text is PII. No offsets, no placeholders.
  */
 export function buildSystemPrompt(enabledPiiTypes: PiiType[]): string {
     const enabledTypes = enabledPiiTypes.map((type) => `- ${type}: ${PII_TYPE_DESCRIPTIONS[type]}`).join('\n');
@@ -27,17 +43,16 @@ PII types to detect:
 ${enabledTypes}
 
 Rules:
-1. Only detect PII that is clearly identifiable (high confidence)
-2. Avoid false positives (e.g., "Call me at 5PM" is not a phone number)
-3. Handle partial PII that may span across chunks
-4. Return exact character offsets (0-indexed, endOffset is exclusive)
-5. Use appropriate placeholders: [EMAIL], [PHONE], [SSN], [CREDIT_CARD], [ADDRESS], [NAME], [GOV_ID], [IP], [DOB]
+1. Only detect PII that is clearly identifiable (high confidence).
+2. Avoid false positives (e.g., "Call me at 5PM" is not a phone number).
+3. Detect PII only if it is fully present in the provided text. Do not guess at partial or truncated PII.
 
-Return results as JSON array only, no markdown or explanation.`;
+Return results as a JSON array only. Each item: piiType, value (exact substring), and confidence (required, 0–1). No markdown or explanation.`;
 }
 
 /**
- * Build user prompt for PII detection
+ * Build user prompt for PII detection.
+ * Asks only for piiType, value, and confidence. Offsets and placeholders are derived by the system.
  */
 export function buildDetectionPrompt(text: string, enabledPiiTypes: PiiType[]): string {
     const typesList = enabledPiiTypes.join(', ');
@@ -50,22 +65,16 @@ Text to analyze:
 ${text}
 """
 
-Return a JSON array of detected PII instances. Each instance should have:
+Return a JSON array of detected PII instances. Each instance must have:
 - piiType: one of ${typesList}
-- value: the exact text of the detected PII (REQUIRED)
-- startOffset: character position where PII starts (0-indexed)
-- endOffset: character position where PII ends (exclusive, 0-indexed)
-- placeholder: a placeholder like "[EMAIL]", "[PHONE]", "[SSN]", etc.
-- confidence: optional number between 0 and 1
+- value: the exact substring of the detected PII (REQUIRED)
+- confidence: number between 0 and 1 (REQUIRED). Use for how sure you are this is PII (e.g. 0.95 for clear match, 0.6 for ambiguous).
 
 Example format:
 [
   {
     "piiType": "email",
     "value": "john.doe@example.com",
-    "startOffset": 12,
-    "endOffset": 32,
-    "placeholder": "[EMAIL]",
     "confidence": 0.95
   }
 ]

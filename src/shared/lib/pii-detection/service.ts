@@ -2,7 +2,7 @@ import 'server-only';
 import { getServerConfig, type PiiType, PII_TYPES } from 'src/shared/config/env/server';
 import { logger } from 'src/shared/lib/logger';
 import { getOpenRouterClient, type ChatMessage } from 'src/shared/lib/openrouter';
-import { buildDetectionPrompt, buildSystemPrompt } from './prompts';
+import { buildDetectionPrompt, buildSystemPrompt, PII_TYPE_TO_PLACEHOLDER } from './prompts';
 import type { PiiDetectionResponse, PiiDetectionResult } from './types';
 import { trackPiiDetectionCost } from './cost-tracking';
 
@@ -164,11 +164,11 @@ class PiiDetectionService {
     }
 
     /**
-     * Parse LLM response into structured detection results
+     * Parse LLM response into structured detection results.
+     * Expects semantic-only output (piiType, value, confidence). Offsets are derived by finding value in text; placeholder from piiType.
      */
     private parseDetectionResponse(originalText: string, llmResponse: string): PiiDetectionResult[] {
         try {
-            // Extract JSON from response (may have markdown code blocks)
             let jsonStr = llmResponse.trim();
             const jsonMatch = jsonStr.match(/```(?:json)?\s*(\[[\s\S]*\])\s*```/);
             if (jsonMatch) {
@@ -182,79 +182,98 @@ class PiiDetectionService {
                 return [];
             }
 
-            const results: PiiDetectionResult[] = [];
+            const rawItems: Array<{ piiType: PiiType; value: string; confidence: number }> = [];
 
             for (const item of parsed) {
-                if (
-                    typeof item === 'object' &&
-                    item !== null &&
-                    'piiType' in item &&
-                    'startOffset' in item &&
-                    'endOffset' in item &&
-                    'placeholder' in item
-                ) {
-                    const piiType = String(item.piiType).toLowerCase() as PiiType;
-                    const startOffset = Number(item.startOffset);
-                    const endOffset = Number(item.endOffset);
-
-                    // Validate PII type
-                    if (!PII_TYPES.includes(piiType)) {
-                        logger.warn({ piiType }, 'Invalid PII type detected, skipping');
-                        continue;
-                    }
-
-                    // Validate offsets
-                    if (
-                        !Number.isInteger(startOffset) ||
-                        !Number.isInteger(endOffset) ||
-                        startOffset < 0 ||
-                        endOffset <= startOffset ||
-                        endOffset > originalText.length
-                    ) {
-                        logger.warn(
-                            { startOffset, endOffset, textLength: originalText.length },
-                            'Invalid offsets in PII detection, skipping',
-                        );
-                        continue;
-                    }
-
-                    results.push({
-                        piiType,
-                        startOffset,
-                        endOffset,
-                        placeholder: String(item.placeholder),
-                        confidence: typeof item.confidence === 'number' ? item.confidence : undefined,
-                    });
+                if (typeof item !== 'object' || item === null || !('piiType' in item) || !('value' in item)) {
+                    continue;
                 }
+
+                const piiType = String(item.piiType).toLowerCase() as PiiType;
+                if (!PII_TYPES.includes(piiType)) {
+                    logger.warn({ piiType }, 'Invalid PII type detected, skipping');
+                    continue;
+                }
+
+                const value = typeof item.value === 'string' ? item.value.trim() : String(item.value ?? '').trim();
+                if (!value) {
+                    logger.warn('PII detection item with empty value, skipping');
+                    continue;
+                }
+
+                let confidence = typeof item.confidence === 'number' ? item.confidence : undefined;
+                if (confidence === undefined || Number.isNaN(confidence)) {
+                    logger.debug(
+                        { piiType, value: value.slice(0, 20) },
+                        'PII detection missing confidence, defaulting to 0.5',
+                    );
+                    confidence = 0.5;
+                }
+                confidence = Math.max(0, Math.min(1, confidence));
+
+                rawItems.push({ piiType, value, confidence });
             }
 
-            // Sort by startOffset for consistent ordering
+            // Resolve offsets by finding each value in text (non-overlapping, first unused occurrence)
+            const usedRanges: Array<[number, number]> = [];
+            const results: PiiDetectionResult[] = [];
+
+            for (const { piiType, value, confidence } of rawItems) {
+                const span = this.findNonOverlappingOccurrence(originalText, value, usedRanges);
+                if (!span) {
+                    logger.warn(
+                        { value: value.slice(0, 30), piiType },
+                        'PII value not found in text or overlaps existing, skipping',
+                    );
+                    continue;
+                }
+
+                const [startOffset, endOffset] = span;
+                usedRanges.push([startOffset, endOffset]);
+
+                results.push({
+                    piiType,
+                    startOffset,
+                    endOffset,
+                    placeholder: PII_TYPE_TO_PLACEHOLDER[piiType],
+                    confidence,
+                });
+            }
+
             results.sort((a, b) => a.startOffset - b.startOffset);
 
-            // Remove overlapping detections (keep first one)
-            const deduplicated: PiiDetectionResult[] = [];
-            for (const detection of results) {
-                const overlaps = deduplicated.some(
-                    (existing) =>
-                        (detection.startOffset < existing.endOffset && detection.endOffset > existing.startOffset) ||
-                        (detection.startOffset === existing.startOffset && detection.endOffset === existing.endOffset),
-                );
+            logger.debug({ count: results.length, types: results.map((d) => d.piiType) }, 'PII detection completed');
 
-                if (!overlaps) {
-                    deduplicated.push(detection);
-                }
-            }
-
-            logger.debug(
-                { count: deduplicated.length, types: deduplicated.map((d) => d.piiType) },
-                'PII detection completed',
-            );
-
-            return deduplicated;
+            return results;
         } catch (error) {
             logger.error({ error, response: llmResponse }, 'Failed to parse PII detection response');
             return [];
         }
+    }
+
+    /**
+     * Find first occurrence of value in text that does not overlap any of the used ranges.
+     */
+    private findNonOverlappingOccurrence(
+        text: string,
+        value: string,
+        usedRanges: Array<[number, number]>,
+    ): [number, number] | null {
+        let fromIndex = 0;
+        const len = value.length;
+
+        while (fromIndex <= text.length - len) {
+            const idx = text.indexOf(value, fromIndex);
+            if (idx === -1) break;
+
+            const end = idx + len;
+            const overlaps = usedRanges.some(([s, e]) => idx < e && end > s);
+            if (!overlaps) {
+                return [idx, end];
+            }
+            fromIndex = idx + 1;
+        }
+        return null;
     }
 }
 
