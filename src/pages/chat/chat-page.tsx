@@ -9,6 +9,7 @@ import { MessageInput } from 'src/widgets/message-input';
 import { ErrorBanner } from 'src/widgets/error-banner';
 import { useStreamMessage } from 'src/features/message/send-message/use-stream-message';
 import { AppSidebar } from 'src/widgets/sidebar';
+import { ChatHeader } from 'src/widgets/chat-header';
 import { useChats } from 'src/entities/chat';
 
 type ErrorType = 'network' | 'quota' | 'rateLimit' | 'session' | 'conversationLimit' | null;
@@ -197,6 +198,7 @@ export function ChatView() {
             <AppSidebar />
 
             <div className="flex flex-1 flex-col">
+                <ChatHeader />
                 <ErrorBanner
                     error={error}
                     onDismiss={() => {

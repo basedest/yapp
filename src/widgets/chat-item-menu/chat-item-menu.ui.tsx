@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { DeleteChat } from 'src/features/chat/delete-chat';
@@ -19,26 +19,29 @@ type ChatItemMenuProps = {
     chatTitle: string;
     onDelete?: (chatId: string) => void;
     isDeleting?: boolean;
+    trigger?: ReactElement;
 };
 
-export function ChatItemMenu({ chatId, chatTitle, onDelete, isDeleting }: ChatItemMenuProps) {
+export function ChatItemMenu({ chatId, chatTitle, onDelete, isDeleting, trigger }: ChatItemMenuProps) {
     const t = useTranslations('chat');
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [renameOpen, setRenameOpen] = useState(false);
 
+    const triggerNode = (
+        <Button
+            variant="ghost"
+            size="icon"
+            className="hover:bg-accent h-8 w-8 shrink-0 cursor-pointer opacity-0 group-hover/conversation:opacity-100 group-data-[active=true]/conversation:opacity-100"
+            aria-label={t('conversationActions')}
+        >
+            <MoreHorizontal className="h-4 w-4" />
+        </Button>
+    );
+
     return (
         <>
             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-accent h-8 w-8 shrink-0 cursor-pointer opacity-0 group-hover/conversation:opacity-100 group-data-[active=true]/conversation:opacity-100"
-                        aria-label={t('conversationActions')}
-                    >
-                        <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
+                <DropdownMenuTrigger asChild>{trigger ?? triggerNode}</DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-44">
                     <DropdownMenuItem onSelect={() => setRenameOpen(true)}>
                         <Pencil className="size-4" />
