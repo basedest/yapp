@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import {
     SidebarHeader,
     SidebarMenu,
@@ -16,6 +17,7 @@ import { useChats } from 'src/entities/chat';
 export function AppSidebarHeader() {
     const { open } = useSidebar();
     const t = useTranslations('sidebar');
+    const router = useRouter();
     const { handleNewChat } = useChats();
 
     return (
@@ -25,6 +27,7 @@ export function AppSidebarHeader() {
                     <SidebarMenuButton
                         onClick={() => {
                             handleNewChat();
+                            router.push('/');
                         }}
                         tooltip={t('openSidebar')}
                         size="lg"

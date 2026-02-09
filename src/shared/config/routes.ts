@@ -1,7 +1,7 @@
 /**
  * Route protection config.
  * Routes under app/(protected)/ require authentication; all others are public.
- * Public routes: /, /login, /register, /api/auth/*
+ * Public routes: /login, /register, /api/auth/*
  */
 
 export const LOGIN_PATH = '/login' as const;
@@ -10,7 +10,7 @@ export const LOGIN_PATH = '/login' as const;
 export const PUBLIC_PATH_PREFIXES: readonly string[] = ['/api/auth', '/login', '/register'];
 
 /** Paths that are exactly public (exact match). */
-export const PUBLIC_PATHS: readonly string[] = ['/'];
+export const PUBLIC_PATHS: readonly string[] = [];
 
 /**
  * Returns true if the pathname is a public route (no auth required).

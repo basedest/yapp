@@ -2,6 +2,7 @@
 
 import { MessageSquare } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 
 import {
     SidebarGroup,
@@ -17,6 +18,7 @@ import { ChatItemMenu } from 'src/widgets/chat-item-menu/chat-item-menu.ui';
 
 export function SidebarChats() {
     const t = useTranslations('sidebar');
+    const router = useRouter();
     const {
         chats: conversations,
         selectedChatId: selectedConversationId,
@@ -28,6 +30,15 @@ export function SidebarChats() {
 
     const { open } = useSidebar();
 
+    const handleDelete = (chatId: string) => {
+        const shouldRedirect = chatId === selectedConversationId;
+        handleDeleteConversation(chatId, () => {
+            if (shouldRedirect) {
+                router.push('/');
+            }
+        });
+    };
+
     return (
         <SidebarGroup>
             <SidebarGroupLabel>{t('chats')}</SidebarGroupLabel>
@@ -35,7 +46,10 @@ export function SidebarChats() {
                 <SidebarMenuItem>
                     <SidebarMenuButton
                         tooltip={t('newChat')}
-                        onClick={handleNewChat}
+                        onClick={() => {
+                            handleNewChat();
+                            router.push('/');
+                        }}
                         className={cn(
                             'group hover:bg-accent/80 relative flex min-h-0 items-stretch border-transparent',
                             selectedConversationId === undefined && 'bg-accent',
@@ -49,7 +63,10 @@ export function SidebarChats() {
                     conversations.map((conv) => (
                         <SidebarMenuItem key={conv.id}>
                             <SidebarMenuButton
-                                onClick={() => setSelectedConversationId(conv.id)}
+                                onClick={() => {
+                                    setSelectedConversationId(conv.id);
+                                    router.push(`/chat/${conv.id}`);
+                                }}
                                 className={cn(
                                     'group hover:bg-accent/80 relative flex min-h-0 items-stretch border-transparent',
                                     conv.id === selectedConversationId && 'bg-accent',
@@ -62,12 +79,14 @@ export function SidebarChats() {
                                     <span className="min-w-0 flex-1 truncate text-sm font-medium" title={conv.title}>
                                         {conv.title}
                                     </span>
-                                    <ChatItemMenu
-                                        chatId={conv.id}
-                                        chatTitle={conv.title}
-                                        onDelete={handleDeleteConversation}
-                                        isDeleting={isDeletingId === conv.id}
-                                    />
+                                    <div onClick={(event) => event.stopPropagation()}>
+                                        <ChatItemMenu
+                                            chatId={conv.id}
+                                            chatTitle={conv.title}
+                                            onDelete={handleDelete}
+                                            isDeleting={isDeletingId === conv.id}
+                                        />
+                                    </div>
                                 </div>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

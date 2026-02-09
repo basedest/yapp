@@ -73,9 +73,16 @@ export function useChats() {
         setMessageInput('');
     };
 
-    const handleDeleteChat = (chatId: string) => {
+    const handleDeleteChat = (chatId: string, onSuccess?: () => void) => {
         setIsDeletingId(chatId);
-        deleteChatMutation.mutate({ id: chatId });
+        deleteChatMutation.mutate(
+            { id: chatId },
+            {
+                onSuccess: () => {
+                    onSuccess?.();
+                },
+            },
+        );
     };
 
     return {
