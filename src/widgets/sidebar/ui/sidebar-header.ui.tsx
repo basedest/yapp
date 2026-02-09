@@ -40,7 +40,7 @@ export function AppSidebarHeader() {
                                 </div>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <SidebarTrigger />
+                                        <SidebarTrigger onClick={(event) => event.stopPropagation()} />
                                     </TooltipTrigger>
                                     <TooltipContent side="right" align="center">
                                         {t('closeSidebar')}
@@ -48,7 +48,7 @@ export function AppSidebarHeader() {
                                 </Tooltip>
                             </>
                         ) : (
-                            <SidebarTrigger className="mx-auto" />
+                            <SidebarTrigger className="mx-auto" onClick={(event) => event.stopPropagation()} />
                         )}
                     </SidebarMenuButton>
                 </SidebarMenuItem>
