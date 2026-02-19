@@ -40,6 +40,10 @@ const rawServerEnvSchema = z.object({
     PII_DETECTION_MODEL: z.string().optional(),
     PII_TYPES: z.string().optional(),
     PII_FALLBACK_WHEN_UNAVAILABLE: z.string().optional(),
+    /** App URL for OpenRouter HTTP-Referer (e.g. https://promptify.local). Falls back to BETTER_AUTH_URL. */
+    APP_URL: z.url().optional(),
+    /** App title for OpenRouter X-Title header (e.g. Promptify). */
+    APP_TITLE: z.string().optional(),
 });
 
 function parsePiiTypes(value: string | undefined): PiiType[] {
@@ -54,6 +58,8 @@ const serverEnvSchema = rawServerEnvSchema.transform((raw): ServerConfig => {
     const logLevel = logLevelSchema.catch(nodeEnv === 'development' ? 'debug' : 'info').parse(raw.LOG_LEVEL);
 
     const betterAuthBaseUrl = raw.BETTER_AUTH_URL?.trim() || 'http://localhost:3000';
+    const appUrl = raw.APP_URL?.trim() || betterAuthBaseUrl;
+    const appTitle = raw.APP_TITLE?.trim() || 'Promptify';
 
     const piiEnabled = raw.PII_DETECTION_ENABLED?.toLowerCase() === 'true';
     const piiChunkBatchSize = Math.max(1, parseInt(raw.PII_CHUNK_BATCH_SIZE ?? '10', 10) || 5);
@@ -86,6 +92,8 @@ const serverEnvSchema = rawServerEnvSchema.transform((raw): ServerConfig => {
         ai: {
             openRouterApiKey: raw.OPENROUTER_API_KEY,
             model: 'openai/gpt-4o-mini',
+            appUrl,
+            appTitle,
         },
         logLevel,
         chat: {
@@ -121,7 +129,7 @@ export type ServerConfig = {
     nodeEnv: 'development' | 'production' | 'test';
     database: { url: string; directUrl?: string };
     auth: { secret: string; baseUrl: string };
-    ai: { openRouterApiKey: string; model: string };
+    ai: { openRouterApiKey: string; model: string; appUrl: string; appTitle: string };
     logLevel: 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'trace';
     chat: {
         dailyTokenLimit: number;
@@ -157,6 +165,8 @@ function getRawEnv(): Record<string, string | undefined> {
         PII_DETECTION_MODEL: process.env.PII_DETECTION_MODEL,
         PII_TYPES: process.env.PII_TYPES,
         PII_FALLBACK_WHEN_UNAVAILABLE: process.env.PII_FALLBACK_WHEN_UNAVAILABLE,
+        APP_URL: process.env.APP_URL,
+        APP_TITLE: process.env.APP_TITLE,
     };
 }
 

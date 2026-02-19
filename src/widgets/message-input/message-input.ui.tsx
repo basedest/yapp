@@ -43,7 +43,7 @@ export function MessageInput({ value, onChange, onSubmit, disabled, isSubmitting
     const canSubmit = !disabled && !isSubmitting && value.trim() && !isOverLimit;
     const isMultiline = value.includes('\n') || value.length > 128;
     const textareaClassName =
-        'max-h-[200px] min-h-10 flex-1 resize-none border-none [scrollbar-color:var(--color-border)_transparent] focus-visible:border-none focus-visible:shadow-none focus-visible:ring-0 dark:bg-transparent [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent';
+        'max-h-[200px] min-h-10 flex-1 resize-none border-0 border-none shadow-none ring-0 ring-offset-0 outline-none [scrollbar-color:var(--color-border)_transparent] focus:border-0 focus:shadow-none focus:ring-0 focus:outline-none focus-visible:border-0 focus-visible:shadow-none focus-visible:ring-0 focus-visible:outline-none dark:bg-transparent [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent';
     const submitLabel = isSubmitting ? t('sending') : t('send');
 
     const messageTextarea = (

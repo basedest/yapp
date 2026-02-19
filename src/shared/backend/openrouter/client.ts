@@ -51,12 +51,16 @@ export type ChatCompletionResponse = {
 class OpenRouterClient {
     private readonly apiKey: string;
     private readonly model: string;
+    private readonly appUrl: string;
+    private readonly appTitle: string;
     private readonly baseUrl = 'https://openrouter.ai/api/v1';
 
     constructor() {
         const config = getServerConfig();
         this.apiKey = config.ai.openRouterApiKey;
         this.model = config.ai.model;
+        this.appUrl = config.ai.appUrl;
+        this.appTitle = config.ai.appTitle;
     }
 
     /**
@@ -72,8 +76,8 @@ class OpenRouterClient {
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${this.apiKey}`,
-                'HTTP-Referer': 'https://promptify.local',
-                'X-Title': 'Promptify',
+                'HTTP-Referer': this.appUrl,
+                'X-Title': this.appTitle,
             },
             body: JSON.stringify({
                 model: this.model,
@@ -158,8 +162,8 @@ class OpenRouterClient {
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${this.apiKey}`,
-                'HTTP-Referer': 'https://promptify.local',
-                'X-Title': 'Promptify',
+                'HTTP-Referer': this.appUrl,
+                'X-Title': this.appTitle,
             },
             body: JSON.stringify({
                 model,
