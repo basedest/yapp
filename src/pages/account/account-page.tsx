@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { trpc } from 'src/shared/api/trpc/client';
 import { Button } from 'src/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'src/shared/ui/card';
+import { Skeleton } from 'src/shared/ui/skeleton';
 
 function formatResetDate(date: Date): string {
     return new Intl.DateTimeFormat(undefined, {
@@ -28,7 +29,34 @@ export function AccountView() {
                     </Button>
                 </div>
 
-                {isLoading && <p className="text-muted-foreground text-sm">{t('loading')}</p>}
+                {isLoading && (
+                    <div className="space-y-6">
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <Skeleton className="h-4 w-32" />
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                <div className="flex justify-between">
+                                    <Skeleton className="h-4 w-48" />
+                                    <Skeleton className="h-4 w-20" />
+                                </div>
+                                <Skeleton className="h-2 w-full rounded-full" />
+                                <Skeleton className="h-3 w-40" />
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <Skeleton className="h-4 w-40" />
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                <div className="flex justify-between">
+                                    <Skeleton className="h-4 w-36" />
+                                    <Skeleton className="h-4 w-20" />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
                 {!isLoading && quotas && (
                     <div className="space-y-6">
                         <Card>

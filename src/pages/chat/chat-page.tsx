@@ -10,6 +10,7 @@ import { ErrorBanner } from 'src/widgets/error-banner';
 import { useStreamMessage } from 'src/features/message/send-message/use-stream-message';
 import { ChatHeader } from 'src/widgets/chat-header';
 import { useChats } from 'src/entities/chat';
+import { Skeleton } from 'src/shared/ui/skeleton';
 
 const GREETING_COUNT = 8;
 
@@ -199,8 +200,28 @@ export function ChatView({ chatId }: ChatViewProps) {
 
     if (loadingChats) {
         return (
-            <div className="flex flex-1 items-center justify-center">
-                <p className="text-muted-foreground">{t('loading')}</p>
+            <div className="flex flex-1 flex-col">
+                <ChatHeader />
+                <div className="flex-1 overflow-y-auto p-6">
+                    <div className="mx-auto max-w-3xl space-y-4">
+                        <div className="flex justify-start py-3">
+                            <div className="w-[75%] space-y-2 p-4">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-4/5" />
+                                <Skeleton className="h-4 w-3/5" />
+                            </div>
+                        </div>
+                        <div className="flex justify-end py-3">
+                            <Skeleton className="h-10 w-2/5 rounded-2xl" />
+                        </div>
+                        <div className="flex justify-start py-3">
+                            <div className="w-[75%] space-y-2 p-4">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-3/4" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }

@@ -14,6 +14,7 @@ import {
 } from 'src/shared/ui/sidebar';
 import { useChats } from 'src/entities/chat';
 import { cn } from 'src/shared/lib/utils';
+import { Skeleton } from 'src/shared/ui/skeleton';
 import { ChatItemMenu } from 'src/widgets/chat-item-menu/chat-item-menu.ui';
 
 export function SidebarChats() {
@@ -21,6 +22,7 @@ export function SidebarChats() {
     const router = useRouter();
     const {
         chats: conversations,
+        loadingChats,
         selectedChatId: selectedConversationId,
         setSelectedChatId: setSelectedConversationId,
         handleNewChat,
@@ -60,6 +62,16 @@ export function SidebarChats() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 {open &&
+                    loadingChats &&
+                    Array.from({ length: 4 }).map((_, i) => (
+                        <SidebarMenuItem key={i}>
+                            <div className="flex items-center px-2 py-1.5">
+                                <Skeleton className="h-4 w-full rounded" />
+                            </div>
+                        </SidebarMenuItem>
+                    ))}
+                {open &&
+                    !loadingChats &&
                     conversations.map((conv) => (
                         <SidebarMenuItem key={conv.id}>
                             <SidebarMenuButton
