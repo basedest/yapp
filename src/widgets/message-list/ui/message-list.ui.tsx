@@ -63,7 +63,7 @@ export function MessageList({
     }
 
     return (
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-x-hidden overflow-y-auto p-6">
             <div className="mx-auto max-w-3xl space-y-4">
                 {messages.map((message) => (
                     <MessageCard

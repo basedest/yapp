@@ -40,11 +40,11 @@ export function MessageCard({
 
     return (
         <div className={cn('flex w-full', isUser ? 'justify-end' : 'justify-start', className)}>
-            <div className={cn('group flex max-w-[75%] flex-col gap-1', isUser ? 'items-end' : 'items-start')}>
+            <div className={cn('group flex flex-col gap-1', isUser ? 'max-w-[75%] items-end' : 'w-full items-start')}>
                 <div
                     className={cn(
                         'rounded-xl px-4 py-2 text-[15px] leading-7 wrap-break-word',
-                        isUser ? 'bg-zinc-100 dark:bg-zinc-800/50' : 'bg-transparent',
+                        isUser ? 'bg-zinc-100 dark:bg-zinc-800/50' : 'w-full bg-transparent',
                     )}
                 >
                     <Markdown
