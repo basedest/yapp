@@ -14,6 +14,7 @@ import {
 import { Tooltip, TooltipTrigger, TooltipContent } from 'src/shared/ui/tooltip';
 import { useChats } from 'src/entities/chat';
 import { AppTitle } from '~/src/shared/ui/app-title';
+import { YappLogo } from '~/src/shared/ui/yapp-logo';
 
 export function AppSidebarHeader() {
     const { open } = useSidebar();
@@ -36,6 +37,7 @@ export function AppSidebarHeader() {
                     >
                         {open ? (
                             <>
+                                <YappLogo size={24} className="shrink-0" />
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <AppTitle />
                                 </div>
