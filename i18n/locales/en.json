@@ -1,4 +1,8 @@
 {
+    "metadata": {
+        "title": "Yapp",
+        "description": "Yet another prompt app — but this one's good"
+    },
     "auth": {
         "email": "Email",
         "password": "Password",

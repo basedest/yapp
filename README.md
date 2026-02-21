@@ -1,4 +1,4 @@
-# Promptify
+# Yapp — Yet another prompt app
 
 Next.js application with AI chat, authentication, and structured domain logic.
 
@@ -26,49 +26,49 @@ Next.js application with AI chat, authentication, and structured domain logic.
 
 1. **Install dependencies**
 
-   ```bash
-   pnpm install
-   ```
+    ```bash
+    pnpm install
+    ```
 
 2. **Environment**
 
-   Copy `.env.example` to `.env` and set at least:
-   - `DATABASE_URL` — PostgreSQL connection string
-   - `BETTER_AUTH_SECRET` — at least 32 characters (`openssl rand -base64 32`)
-   - `BETTER_AUTH_URL` — app URL (e.g. `http://localhost:3000`)
-   - `OPENROUTER_API_KEY` — for AI chat ([OpenRouter](https://openrouter.ai/keys))
+    Copy `.env.example` to `.env` and set at least:
+    - `DATABASE_URL` — PostgreSQL connection string
+    - `BETTER_AUTH_SECRET` — at least 32 characters (`openssl rand -base64 32`)
+    - `BETTER_AUTH_URL` — app URL (e.g. `http://localhost:3000`)
+    - `OPENROUTER_API_KEY` — for AI chat ([OpenRouter](https://openrouter.ai/keys))
 
 3. **Database**
 
-   ```bash
-   pnpm cluster          # Start PostgreSQL (or pnpm cluster:daemon for background)
-   pnpm prisma:generate
-   pnpm prisma:migrate
-   ```
+    ```bash
+    pnpm cluster          # Start PostgreSQL (or pnpm cluster:daemon for background)
+    pnpm prisma:generate
+    pnpm prisma:migrate
+    ```
 
 4. **Run the app**
 
-   ```bash
-   pnpm dev
-   ```
+    ```bash
+    pnpm dev
+    ```
 
-   Open [http://localhost:3000](http://localhost:3000).
+    Open [http://localhost:3000](http://localhost:3000).
 
 ## Commands
 
-| Command | Description |
-|--------|-------------|
-| `pnpm dev` | Start Next.js dev server |
-| `pnpm build` | Production build |
-| `pnpm start` | Start production server |
-| `pnpm lint` | Run ESLint |
-| `pnpm lint:fix` | ESLint with auto-fix |
-| `pnpm ts:check` | TypeScript type check |
-| `pnpm cluster` | Start PostgreSQL (Docker Compose) |
-| `pnpm cluster:daemon` | Start PostgreSQL in background |
-| `pnpm prisma:generate` | Generate Prisma client |
-| `pnpm prisma:migrate` | Run migrations |
-| `pnpm prisma:studio` | Open Prisma Studio |
+| Command                | Description                       |
+| ---------------------- | --------------------------------- |
+| `pnpm dev`             | Start Next.js dev server          |
+| `pnpm build`           | Production build                  |
+| `pnpm start`           | Start production server           |
+| `pnpm lint`            | Run ESLint                        |
+| `pnpm lint:fix`        | ESLint with auto-fix              |
+| `pnpm ts:check`        | TypeScript type check             |
+| `pnpm cluster`         | Start PostgreSQL (Docker Compose) |
+| `pnpm cluster:daemon`  | Start PostgreSQL in background    |
+| `pnpm prisma:generate` | Generate Prisma client            |
+| `pnpm prisma:migrate`  | Run migrations                    |
+| `pnpm prisma:studio`   | Open Prisma Studio                |
 
 Issue tracking uses [beads](https://github.com/beads-dev/beads): `bd ready`, `bd list --status=open`, `bd close <id>`, `bd sync`.
 

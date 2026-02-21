@@ -41,9 +41,9 @@ const rawServerEnvSchema = z.object({
     PII_DETECTION_MODEL: z.string().optional(),
     PII_TYPES: z.string().optional(),
     PII_FALLBACK_WHEN_UNAVAILABLE: z.string().optional(),
-    /** App URL for OpenRouter HTTP-Referer (e.g. https://promptify.local). Falls back to BETTER_AUTH_URL. */
+    /** App URL for OpenRouter HTTP-Referer (e.g. https://yapp.local). Falls back to BETTER_AUTH_URL. */
     APP_URL: z.url().optional(),
-    /** App title for OpenRouter X-Title header (e.g. Promptify). */
+    /** App title for OpenRouter X-Title header (e.g. Yapp). */
     APP_TITLE: z.string().optional(),
 });
 
@@ -60,7 +60,7 @@ const serverEnvSchema = rawServerEnvSchema.transform((raw): ServerConfig => {
 
     const betterAuthBaseUrl = raw.BETTER_AUTH_URL?.trim() || 'http://localhost:3000';
     const appUrl = raw.APP_URL?.trim() || betterAuthBaseUrl;
-    const appTitle = raw.APP_TITLE?.trim() || 'Promptify';
+    const appTitle = raw.APP_TITLE?.trim() || 'Yapp';
 
     const piiEnabled = raw.PII_DETECTION_ENABLED?.toLowerCase() === 'true';
     const piiChunkBatchSize = Math.max(1, parseInt(raw.PII_CHUNK_BATCH_SIZE ?? '10', 10) || 5);

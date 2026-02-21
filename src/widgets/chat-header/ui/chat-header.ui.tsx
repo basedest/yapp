@@ -12,7 +12,6 @@ import { SidebarTrigger } from 'src/shared/ui/sidebar';
 import { ChatItemMenu } from 'src/widgets/chat-item-menu';
 
 export function ChatHeader() {
-    const tSidebar = useTranslations('sidebar');
     const tChat = useTranslations('chat');
     const router = useRouter();
     const { chats, selectedChatId, handleDeleteChat, isDeletingId } = useChats();
@@ -35,7 +34,7 @@ export function ChatHeader() {
         <div className="bg-background flex h-11 shrink-0 items-center gap-2 px-4">
             <SidebarTrigger className="md:hidden" />
             <div className="flex min-w-0 flex-1 items-center">
-                {selectedChat ? (
+                {selectedChat && (
                     <ChatItemMenu
                         chatId={selectedChat.id}
                         chatTitle={selectedChat.title}
@@ -62,8 +61,6 @@ export function ChatHeader() {
                             </Button>
                         }
                     />
-                ) : (
-                    <span className="text-muted-foreground text-sm font-medium">{tSidebar('newChat')}</span>
                 )}
             </div>
         </div>

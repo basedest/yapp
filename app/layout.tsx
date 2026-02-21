@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { getLocale, getMessages } from 'next-intl/server';
+import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { AppProviders } from 'src/app';
 import './globals.css';
 import { SidebarInset } from 'src/shared/ui/sidebar';
@@ -16,10 +16,14 @@ const geistMono = Geist_Mono({
     subsets: ['latin'],
 });
 
-export const metadata: Metadata = {
-    title: 'Promptify', // TODO: Add title with i18n
-    description: 'Promptify is a AI chat platform with security and privacy in mind.', // TODO: Add description with i18n
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const locale = await getLocale();
+    const t = await getTranslations({ locale, namespace: 'metadata' });
+    return {
+        title: t('title'),
+        description: t('description'),
+    };
+}
 
 export default async function RootLayout({
     children,

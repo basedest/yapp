@@ -36,7 +36,7 @@ export function AppSidebarHeader() {
                         {open ? (
                             <>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate text-lg font-bold">Promptify</span>
+                                    <span className="truncate text-lg font-bold">Yapp</span>
                                 </div>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
