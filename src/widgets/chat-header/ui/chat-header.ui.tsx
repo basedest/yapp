@@ -3,6 +3,7 @@
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 
 import { useChats } from 'src/entities/chat';
 import { getClientConfig } from 'src/shared/config/env/client';
@@ -13,6 +14,7 @@ import { ChatItemMenu } from 'src/widgets/chat-item-menu';
 export function ChatHeader() {
     const tSidebar = useTranslations('sidebar');
     const tChat = useTranslations('chat');
+    const router = useRouter();
     const { chats, selectedChatId, handleDeleteChat, isDeletingId } = useChats();
     const clientConfig = getClientConfig();
 
@@ -37,7 +39,7 @@ export function ChatHeader() {
                     <ChatItemMenu
                         chatId={selectedChat.id}
                         chatTitle={selectedChat.title}
-                        onDelete={handleDeleteChat}
+                        onDelete={(chatId) => handleDeleteChat(chatId, () => router.push('/'))}
                         isDeleting={isDeletingId === selectedChat.id}
                         trigger={
                             <Button
