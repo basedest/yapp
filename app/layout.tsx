@@ -4,6 +4,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { AppProviders } from 'src/app';
 import './globals.css';
 import { SidebarInset } from 'src/shared/ui/sidebar';
+import { Analytics } from '@vercel/analytics/next';
 
 const geistSans = Geist({
     variable: '--font-geist-sans',
@@ -33,6 +34,7 @@ export default async function RootLayout({
             <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
                 <AppProviders locale={locale} messages={messages}>
                     <SidebarInset>{children}</SidebarInset>
+                    <Analytics />
                 </AppProviders>
             </body>
         </html>
