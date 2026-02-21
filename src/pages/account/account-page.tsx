@@ -1,9 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { trpc } from 'src/shared/api/trpc/client';
-import { Button } from 'src/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'src/shared/ui/card';
 import { Skeleton } from 'src/shared/ui/skeleton';
 
@@ -20,14 +18,9 @@ export function AccountView() {
     const { data: quotas, isLoading } = trpc.tokenTracking.getAccountQuotas.useQuery();
 
     return (
-        <div className="flex min-h-screen flex-col gap-8 p-6">
+        <div className="flex flex-1 flex-col overflow-y-auto p-6">
             <div className="mx-auto w-full max-w-2xl space-y-8">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-                    <Button asChild variant="outline">
-                        <Link href="/">{t('backToChat')}</Link>
-                    </Button>
-                </div>
+                <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
 
                 {isLoading && (
                     <div className="space-y-6">
