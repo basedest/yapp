@@ -58,6 +58,17 @@ model Account {
   user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
 // AI Chat: conversations, messages, and token usage tracking
 model Conversation {
   id          String    @id @default(cuid())

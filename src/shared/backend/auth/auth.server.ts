@@ -17,6 +17,14 @@ export const auth = betterAuth({
         enabled: true,
         requireEmailVerification: false,
     },
+    ...(config.auth.google && {
+        socialProviders: {
+            google: {
+                clientId: config.auth.google.clientId,
+                clientSecret: config.auth.google.clientSecret,
+            },
+        },
+    }),
     plugins: [nextCookies()],
 });
 

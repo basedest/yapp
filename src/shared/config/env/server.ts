@@ -31,6 +31,8 @@ const rawServerEnvSchema = z.object({
     DIRECT_DATABASE_URL: z.string().optional(),
     BETTER_AUTH_URL: z.url().optional(),
     BETTER_AUTH_SECRET: z.string().min(32, 'BETTER_AUTH_SECRET must be at least 32 characters long'),
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
     OPENROUTER_API_KEY: z.string().min(1, 'OPENROUTER_API_KEY is required'),
     LOG_LEVEL: z.string().optional(),
     // PII detection (FR5, admin-only)
@@ -90,6 +92,9 @@ const serverEnvSchema = rawServerEnvSchema.transform((raw): ServerConfig => {
         auth: {
             secret: raw.BETTER_AUTH_SECRET,
             baseUrl: betterAuthBaseUrl,
+            ...(raw.GOOGLE_CLIENT_ID && raw.GOOGLE_CLIENT_SECRET
+                ? { google: { clientId: raw.GOOGLE_CLIENT_ID, clientSecret: raw.GOOGLE_CLIENT_SECRET } }
+                : {}),
         },
         ai: {
             openRouterApiKey: raw.OPENROUTER_API_KEY,
@@ -131,7 +136,7 @@ const serverEnvSchema = rawServerEnvSchema.transform((raw): ServerConfig => {
 export type ServerConfig = {
     nodeEnv: 'development' | 'production' | 'test';
     database: { url: string; directUrl?: string };
-    auth: { secret: string; baseUrl: string };
+    auth: { secret: string; baseUrl: string; google?: { clientId: string; clientSecret: string } };
     ai: { openRouterApiKey: string; model: string; appUrl: string; appTitle: string };
     logLevel: 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'trace';
     chat: {
@@ -161,6 +166,8 @@ function getRawEnv(): Record<string, string | undefined> {
         DIRECT_DATABASE_URL: process.env.DIRECT_DATABASE_URL,
         BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
         BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+        GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+        GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
         OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
         LOG_LEVEL: process.env.LOG_LEVEL,
         PII_DETECTION_ENABLED: process.env.PII_DETECTION_ENABLED,

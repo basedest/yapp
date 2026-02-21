@@ -2,11 +2,14 @@ import Link from 'next/link';
 import { MessageSquare } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { LoginForm } from 'src/features/auth/login';
+import { GoogleSignInButton } from 'src/features/auth/social-login';
+import { getServerConfig } from 'src/shared/config/env';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'src/shared/ui/card';
 import { AppTitle } from '~/src/shared/ui/app-title';
 
 export async function LoginView() {
     const t = await getTranslations('auth');
+    const config = getServerConfig();
     return (
         <div className="bg-muted flex min-h-screen flex-col items-center justify-center gap-6 p-6 md:p-10">
             <div className="flex w-full max-w-sm flex-col gap-6">
@@ -22,6 +25,21 @@ export async function LoginView() {
                         <CardDescription>{t('loginDescription')}</CardDescription>
                     </CardHeader>
                     <CardContent>
+                        {config.auth.google && (
+                            <>
+                                <GoogleSignInButton />
+                                <div className="relative my-4">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <span className="w-full border-t" />
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase">
+                                        <span className="bg-card text-muted-foreground px-2">
+                                            {t('orContinueWith')}
+                                        </span>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                         <LoginForm />
                         <p className="text-muted-foreground mt-4 text-center text-sm">
                             {t('noAccount')}{' '}

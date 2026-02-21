@@ -25,7 +25,9 @@
         "creatingAccount": "Creating account…",
         "registrationFailed": "Registration failed. Please try again.",
         "confirmPassword": "Confirm password",
-        "passwordsDoNotMatch": "Passwords do not match."
+        "passwordsDoNotMatch": "Passwords do not match.",
+        "signInWithGoogle": "Continue with Google",
+        "orContinueWith": "or"
     },
     "chat": {
         "you": "You",
