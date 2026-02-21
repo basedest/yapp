@@ -2,16 +2,20 @@ import { useTranslations } from 'next-intl';
 import { cn } from '~/src/shared/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 
-const appTitleVariants = cva('truncate text-lg font-extrabold tracking-wider drop-shadow-[0_0_6px_currentColor]', {
-    variants: {
-        size: {
-            default: 'text-lg',
+const appTitleVariants = cva(
+    'font-title truncate text-lg font-extrabold tracking-wider drop-shadow-[0_0_6px_currentColor]',
+    {
+        variants: {
+            size: {
+                default: 'text-lg',
+            },
+        },
+        defaultVariants: {
+            size: 'default',
         },
     },
-    defaultVariants: {
-        size: 'default',
-    },
-});
+);
+
 export function AppTitle({
     className,
     size = 'default',

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, Righteous } from 'next/font/google';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { AppProviders } from 'src/app';
 import './globals.css';
@@ -13,6 +13,12 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
     variable: '--font-geist-mono',
+    subsets: ['latin'],
+});
+
+const righteous = Righteous({
+    weight: '400',
+    variable: '--font-righteous',
     subsets: ['latin'],
 });
 
@@ -35,7 +41,7 @@ export default async function RootLayout({
 
     return (
         <html lang={locale} suppressHydrationWarning>
-            <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+            <body className={`${geistSans.variable} ${geistMono.variable} ${righteous.variable} antialiased`}>
                 <AppProviders locale={locale} messages={messages}>
                     <SidebarInset>{children}</SidebarInset>
                     <Analytics />
