@@ -28,7 +28,6 @@ export function MessageCard({
 }: MessageCardProps) {
     const t = useTranslations('chat');
     const isUser = role === 'user';
-    const isAssistant = role === 'assistant';
     const [copied, setCopied] = useState(false);
 
     const handleCopy = () => {

@@ -34,7 +34,8 @@
         "resendVerification": "Resend verification email",
         "resendVerificationSuccess": "Verification email sent. Check your inbox.",
         "resendVerificationFailed": "Failed to resend. Please try again.",
-        "resendVerificationSessionRequired": "Sign in to resend your verification email."
+        "resendVerificationSessionRequired": "Sign in to resend your verification email.",
+        "disposableEmailNotAllowed": "Disposable email addresses are not allowed. Please use a permanent email."
     },
     "chat": {
         "you": "You",

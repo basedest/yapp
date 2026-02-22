@@ -57,6 +57,11 @@ export function RegisterForm() {
 
         setIsLoading(false);
 
+        if (signUpError?.message === 'disposable_email') {
+            setError(t('disposableEmailNotAllowed'));
+            return;
+        }
+
         if (signUpError || !data) {
             setError(t('registrationFailed'));
             return;
