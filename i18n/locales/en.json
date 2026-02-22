@@ -37,7 +37,12 @@
         "resendVerificationSessionRequired": "Sign in to resend your verification email.",
         "disposableEmailNotAllowed": "Disposable email addresses are not allowed. Please use a permanent email.",
         "termsOfService": "Terms of Service",
-        "privacyPolicy": "Privacy Policy"
+        "privacyPolicy": "Privacy Policy",
+        "notSignedIn": "Not signed in",
+        "signInOrSignUp": "Sign in or create account",
+        "agreeToTerms": "By creating an account you agree to our",
+        "agreeToContinue": "By continuing, you agree to our",
+        "and": "and"
     },
     "chat": {
         "you": "You",
@@ -47,6 +52,7 @@
         "noConversations": "No conversations yet",
         "loading": "Loading...",
         "welcomeMessage": "Hello! I'm your AI assistant. How can I help you today?",
+        "guestGreeting": "Yet another prompt app — but this one's good",
         "greetings": {
             "0": "What shall we think through?",
             "1": "What would you like to explore?",
@@ -57,7 +63,7 @@
             "6": "Welcome! What are you working on?",
             "7": "Hi! What would you like to know?"
         },
-        "messageInputPlaceholder": "Type your message...",
+        "messageInputPlaceholder": "Ask anything...",
         "send": "Send",
         "sending": "Sending...",
         "aiDisclaimer": "AI can make mistakes. Double-check important responses.",

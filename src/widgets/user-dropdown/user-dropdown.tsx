@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { ChevronsUpDown, LogOut, User } from 'lucide-react';
 import { authClient } from 'src/shared/lib/auth/auth.client';
+import { useAuthDialog } from 'src/features/auth/auth-dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -39,9 +40,23 @@ export function UserDropdown() {
     const router = useRouter();
     const { data: session, isPending } = authClient.useSession();
     const { isMobile } = useSidebar();
+    const { openSignIn } = useAuthDialog();
 
-    if (isPending || !session) {
+    if (isPending) {
         return null;
+    }
+
+    if (!session) {
+        return (
+            <SidebarMenuButton size="lg" onClick={openSignIn} aria-label={tAuth('signIn')}>
+                <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarFallback className="rounded-lg">?</AvatarFallback>
+                </Avatar>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="text-muted-foreground truncate font-medium">{tAuth('notSignedIn')}</span>
+                </div>
+            </SidebarMenuButton>
+        );
     }
 
     const displayName = session.user.name?.trim() || session.user.email;

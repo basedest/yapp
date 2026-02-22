@@ -26,34 +26,42 @@ export function AppSidebarHeader() {
         <SidebarHeader>
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton
-                        onClick={() => {
-                            handleNewChat();
-                            router.push('/');
-                        }}
-                        tooltip={t('openSidebar')}
-                        size="lg"
-                        className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                    >
-                        {open ? (
-                            <>
+                    {open ? (
+                        <div className="flex items-center gap-1">
+                            <SidebarMenuButton
+                                onClick={() => {
+                                    handleNewChat();
+                                    router.push('/');
+                                }}
+                                size="lg"
+                                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex-1"
+                            >
                                 <YappLogo size={24} className="shrink-0" />
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <AppTitle />
                                 </div>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <SidebarTrigger onClick={(event) => event.stopPropagation()} />
-                                    </TooltipTrigger>
-                                    <TooltipContent side="right" align="center">
-                                        {t('closeSidebar')}
-                                    </TooltipContent>
-                                </Tooltip>
-                            </>
-                        ) : (
-                            <SidebarTrigger className="mx-auto" onClick={(event) => event.stopPropagation()} />
-                        )}
-                    </SidebarMenuButton>
+                            </SidebarMenuButton>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <SidebarTrigger />
+                                </TooltipTrigger>
+                                <TooltipContent side="right" align="center">
+                                    {t('closeSidebar')}
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                    ) : (
+                        <div className="flex justify-center">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <SidebarTrigger />
+                                </TooltipTrigger>
+                                <TooltipContent side="right" align="center">
+                                    {t('openSidebar')}
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                    )}
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarHeader>

@@ -6,16 +6,23 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 
 import { useChats } from 'src/entities/chat';
+import { useAuthDialog } from 'src/features/auth/auth-dialog';
 import { getClientConfig } from 'src/shared/config/env/client';
+import { authClient } from 'src/shared/lib/auth/auth.client';
 import { Button } from 'src/shared/ui/button';
 import { SidebarTrigger } from 'src/shared/ui/sidebar';
+import { AppTitle } from 'src/shared/ui/app-title';
+import { YappLogo } from 'src/shared/ui/yapp-logo';
 import { ChatItemMenu } from 'src/widgets/chat-item-menu';
 
 export function ChatHeader() {
     const tChat = useTranslations('chat');
+    const tAuth = useTranslations('auth');
     const router = useRouter();
     const { chats, selectedChatId, handleDeleteChat, isDeletingId } = useChats();
     const clientConfig = getClientConfig();
+    const { data: session, isPending } = authClient.useSession();
+    const { openSignIn, openSignUp } = useAuthDialog();
 
     const selectedChat = selectedChatId ? chats.find((chat) => chat.id === selectedChatId) : undefined;
     const titleRef = useRef<HTMLSpanElement | null>(null);
@@ -31,8 +38,15 @@ export function ChatHeader() {
     }, [selectedChat?.id, selectedChat?.title, clientConfig.chat.maxConversationTitleLength, selectedChat]);
 
     return (
-        <div className="bg-background flex h-11 shrink-0 items-center gap-2 px-4">
-            <SidebarTrigger className="md:hidden" />
+        <div className="bg-background flex h-11 shrink-0 items-center gap-2 px-4 pt-2">
+            {session ? (
+                <SidebarTrigger className="md:hidden" />
+            ) : !isPending ? (
+                <div className="flex items-center gap-2">
+                    <YappLogo size={20} className="text-primary shrink-0" />
+                    <AppTitle />
+                </div>
+            ) : null}
             <div className="flex min-w-0 flex-1 items-center">
                 {selectedChat && (
                     <ChatItemMenu
@@ -63,6 +77,16 @@ export function ChatHeader() {
                     />
                 )}
             </div>
+            {!session && !isPending && (
+                <div className="ml-auto flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={openSignIn}>
+                        {tAuth('signIn')}
+                    </Button>
+                    <Button size="sm" onClick={openSignUp}>
+                        {tAuth('signUp')}
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

@@ -8,7 +8,11 @@ import { Button } from 'src/shared/ui/button';
 import { Input } from 'src/shared/ui/input';
 import { Label } from 'src/shared/ui/label';
 
-export function LoginForm() {
+type LoginFormProps = {
+    onSuccess?: () => void;
+};
+
+export function LoginForm({ onSuccess }: LoginFormProps = {}) {
     const t = useTranslations('auth');
     const router = useRouter();
     const [email, setEmail] = useState('');
@@ -27,19 +31,11 @@ export function LoginForm() {
         }
 
         setIsLoading(true);
-        const { data, error: signInError } = await authClient.signIn.email(
-            {
-                email: trimmedEmail,
-                password,
-                callbackURL: '/',
-            },
-            {
-                onSuccess: () => {
-                    router.push('/');
-                    router.refresh();
-                },
-            },
-        );
+        const { data, error: signInError } = await authClient.signIn.email({
+            email: trimmedEmail,
+            password,
+            callbackURL: '/',
+        });
 
         setIsLoading(false);
 
@@ -48,7 +44,11 @@ export function LoginForm() {
             return;
         }
 
-        router.push('/');
+        if (onSuccess) {
+            onSuccess();
+        } else {
+            router.push('/');
+        }
         router.refresh();
     }
 

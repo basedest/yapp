@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { trpc } from 'src/shared/api/trpc/client';
+import { authClient } from 'src/shared/lib/auth/auth.client';
 
 type ChatListItem = {
     id: string;
@@ -45,7 +46,10 @@ export function useChats() {
         resetChatSelection,
     } = useChatsStore();
 
-    const { data: chats, isLoading: loadingChats } = trpc.chat.list.useQuery();
+    const { data: session } = authClient.useSession();
+    const { data: chats, isLoading: loadingChats } = trpc.chat.list.useQuery(undefined, {
+        enabled: !!session,
+    });
 
     const createChatMutation = trpc.chat.create.useMutation({
         onSuccess: (chat) => {

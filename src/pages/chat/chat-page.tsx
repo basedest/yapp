@@ -1,9 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { trpc } from 'src/shared/api/trpc/client';
+import { useAuthDialog } from 'src/features/auth/auth-dialog';
 import { getClientConfig } from 'src/shared/config/env/client';
+import { authClient } from 'src/shared/lib/auth/auth.client';
 import { MessageList } from 'src/widgets/message-list';
 import { MessageInput } from 'src/widgets/message-input';
 import { ErrorBanner } from 'src/widgets/error-banner';
@@ -61,8 +64,11 @@ function mapErrorType(error: unknown): ErrorType {
 
 export function ChatView({ chatId }: ChatViewProps) {
     const t = useTranslations('chat');
+    const tAuth = useTranslations('auth');
     const utils = trpc.useUtils();
     const clientConfig = getClientConfig();
+    const { data: session, isPending: sessionPending } = authClient.useSession();
+    const { openSignIn } = useAuthDialog();
     const [streamError, setStreamError] = useState<string | null>(null);
     const [optimisticMessage, setOptimisticMessage] = useState<DisplayMessage | null>(null);
     const [pendingChatId, setPendingChatId] = useState<string | null>(null);
@@ -81,7 +87,7 @@ export function ChatView({ chatId }: ChatViewProps) {
     const activeChatId = chatId ?? selectedChatId;
     const { data: messages, isLoading: loadingMessages } = trpc.message.list.useQuery(
         { conversationId: activeChatId! },
-        { enabled: !!activeChatId },
+        { enabled: !!activeChatId && !!session },
     );
 
     const { isStreaming, streamingContent, piiMaskRegions, sendMessage } = useStreamMessage();
@@ -129,6 +135,10 @@ export function ChatView({ chatId }: ChatViewProps) {
 
     const handleSendMessage = async () => {
         if (!messageInput.trim() || isStreaming || createChatMutation.isPending) return;
+        if (!session) {
+            openSignIn();
+            return;
+        }
 
         const content = messageInput.trim();
         setStreamError(null);
@@ -198,7 +208,7 @@ export function ChatView({ chatId }: ChatViewProps) {
         }
     };
 
-    if (loadingChats) {
+    if (loadingChats && !!session) {
         return (
             <div className="flex flex-1 flex-col">
                 <ChatHeader />
@@ -269,17 +279,30 @@ export function ChatView({ chatId }: ChatViewProps) {
 
     if (isEmptyChat) {
         return (
-            <div className="flex flex-1 flex-col">
+            <div className="flex flex-1 flex-col pb-4">
                 <ChatHeader />
                 {errorBannerEl}
                 <div className="flex flex-1 flex-col md:items-center md:justify-center md:gap-6">
                     <div className="flex flex-1 items-center justify-center p-4 md:flex-none md:p-0">
                         <h1 className="text-foreground text-center text-3xl font-semibold tracking-tight md:text-4xl">
-                            {t(`greetings.${greetingIndex}`)}
+                            {!session && !sessionPending ? t('guestGreeting') : t(`greetings.${greetingIndex}`)}
                         </h1>
                     </div>
                     <div className="w-full md:max-w-3xl md:px-4">{messageInputEl}</div>
                 </div>
+                {!session && !sessionPending && (
+                    <p className="text-muted-foreground dark:text-muted-foreground/40 text-center text-xs">
+                        {tAuth('agreeToContinue')}{' '}
+                        <Link href="/terms" className="hover:text-primary underline underline-offset-4">
+                            {tAuth('termsOfService')}
+                        </Link>{' '}
+                        {tAuth('and')}{' '}
+                        <Link href="/privacy-policy" className="hover:text-primary underline underline-offset-4">
+                            {tAuth('privacyPolicy')}
+                        </Link>
+                        .
+                    </p>
+                )}
             </div>
         );
     }
