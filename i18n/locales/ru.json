@@ -1,0 +1,162 @@
+{
+    "metadata": {
+        "title": "YAPP",
+        "description": "Ещё одно приложение с ИИ. Но наконец-то годное."
+    },
+    "auth": {
+        "email": "Email",
+        "password": "Пароль",
+        "emailPlaceholder": "you@example.com",
+        "signIn": "Войти",
+        "signingIn": "Вход…",
+        "signOut": "Выйти",
+        "signUp": "Регистрация",
+        "invalidCredentials": "Неверный email или пароль",
+        "loginTitle": "Вход",
+        "loginDescription": "Войдите с помощью Google",
+        "noAccount": "Нет аккаунта?",
+        "hasAccount": "Уже есть аккаунт?",
+        "dashboard": "Панель управления",
+        "signedIn": "Вы вошли в систему.",
+        "hello": "Привет, {email}",
+        "registerTitle": "Создать аккаунт",
+        "registerDescription": "Зарегистрируйтесь с помощью Google",
+        "createAccount": "Создать аккаунт",
+        "creatingAccount": "Создание аккаунта…",
+        "registrationFailed": "Ошибка регистрации. Попробуйте ещё раз.",
+        "confirmPassword": "Подтвердите пароль",
+        "passwordsDoNotMatch": "Пароли не совпадают.",
+        "signInWithGoogle": "Войти через Google",
+        "orContinueWith": "или продолжить с",
+        "checkEmailTitle": "Проверьте почту",
+        "checkEmailDescription": "Мы отправили ссылку для подтверждения на ваш email",
+        "checkEmailDescriptionWithMask": "Мы отправили ссылку для подтверждения на {maskedEmail}",
+        "resendVerification": "Отправить письмо повторно",
+        "resendVerificationSuccess": "Письмо отправлено. Проверьте почту.",
+        "resendVerificationFailed": "Не удалось отправить. Попробуйте ещё раз.",
+        "resendVerificationSessionRequired": "Войдите, чтобы повторно отправить письмо.",
+        "disposableEmailNotAllowed": "Временные email-адреса не поддерживаются. Используйте постоянный email.",
+        "termsOfService": "Пользовательского соглашения",
+        "privacyPolicy": "Политики конфиденциальности",
+        "notSignedIn": "Не авторизован",
+        "signInOrSignUp": "Войти или создать аккаунт",
+        "agreeToTerms": "Создавая аккаунт, вы принимаете условия",
+        "agreeToContinue": "Продолжая, вы принимаете условия",
+        "and": "и"
+    },
+    "chat": {
+        "you": "Вы",
+        "assistant": "Ассистент",
+        "conversations": "Диалоги",
+        "newChat": "Новый чат",
+        "noConversations": "Пока нет диалогов",
+        "loading": "Загрузка...",
+        "welcomeMessage": "Привет! Я ваш ИИ-ассистент. Чем могу помочь?",
+        "guestGreeting": "Ещё одно приложение с ИИ. Но наконец-то годное.",
+        "greetings": {
+            "0": "О чём подумаем?",
+            "1": "Что бы вы хотели обсудить?",
+            "2": "Привет! О чём думаете?",
+            "3": "Готов помочь. Что нужно?",
+            "4": "Привет! Чем могу помочь?",
+            "5": "С чем помочь сегодня?",
+            "6": "Добро пожаловать! Над чем работаете?",
+            "7": "Привет! Что бы вы хотели узнать?"
+        },
+        "messageInputPlaceholder": "Спросите что угодно...",
+        "send": "Отправить",
+        "sending": "Отправка...",
+        "aiDisclaimer": "ИИ может ошибаться. Проверяйте важные ответы.",
+        "tokens": "токенов",
+        "copyMessage": "Копировать сообщение",
+        "message": "сообщение",
+        "messages": "сообщений",
+        "rename": "Переименовать",
+        "renameDialogTitle": "Переименовать диалог",
+        "renameDialogDescription": "Введите новое название для этого диалога.",
+        "renamePlaceholder": "Название диалога",
+        "renaming": "Переименование...",
+        "save": "Сохранить",
+        "conversationActions": "Действия с диалогом",
+        "deleteConversation": "Удалить диалог",
+        "deleteConfirmTitle": "Удалить диалог?",
+        "deleteConfirmDescription": "Вы уверены, что хотите удалить «{title}»? Это действие нельзя отменить.",
+        "delete": "Удалить",
+        "deleting": "Удаление...",
+        "cancel": "Отмена",
+        "typing": "ИИ печатает",
+        "tokenUsage": {
+            "title": "Использование токенов",
+            "today": "Сегодня",
+            "remaining": "Осталось {count} токенов",
+            "quotaExceeded": "Дневной лимит исчерпан"
+        },
+        "emptyState": {
+            "title": "Начните новый диалог",
+            "description": "Нажмите «Новый чат», чтобы начать общение с ИИ-ассистентом.",
+            "hint": "У вас может быть до 25 диалогов по 200 сообщений в каждом."
+        },
+        "errors": {
+            "network": "Ошибка сети. Проверьте подключение и попробуйте снова.",
+            "quota": "Дневной лимит токенов исчерпан. Лимит обновится в полночь UTC.",
+            "rateLimit": "Превышен лимит запросов. Подождите перед следующим сообщением.",
+            "session": "Сессия истекла. Обновите страницу.",
+            "conversationLimit": "Достигнут лимит диалогов. Удалите старый диалог в боковой панели.",
+            "dismiss": "Закрыть"
+        }
+    },
+    "account": {
+        "title": "Аккаунт",
+        "userMenuLabel": "Меню пользователя",
+        "backToChat": "К чату",
+        "loading": "Загрузка…",
+        "tokenUsage": {
+            "title": "Использование токенов",
+            "used": "Использовано {used} / {limit}",
+            "remaining": "Осталось {count} токенов",
+            "resetsAt": "Обновится {date}",
+            "quotaExceeded": "Дневной лимит исчерпан"
+        },
+        "conversationUsage": {
+            "title": "Диалоги",
+            "used": "Использовано {count} / {limit}",
+            "remaining": "Осталось {count} слотов"
+        }
+    },
+    "language": {
+        "title": "Язык",
+        "en": "English",
+        "ru": "Русский"
+    },
+    "settings": {
+        "title": "Настройки"
+    },
+    "theme": {
+        "title": "Тема",
+        "light": "Светлая",
+        "dark": "Тёмная",
+        "system": "Системная"
+    },
+    "sidebar": {
+        "openSidebar": "Открыть боковую панель",
+        "closeSidebar": "Закрыть боковую панель",
+        "chats": "Чаты",
+        "newChat": "Новый чат"
+    },
+    "legal": {
+        "privacyPolicyTitle": "Политика конфиденциальности",
+        "termsTitle": "Условия использования",
+        "back": "← Назад"
+    },
+    "email": {
+        "verifyEmail": {
+            "subject": "Подтвердите ваш email",
+            "preview": "Подтвердите ваш email для YAPP",
+            "heading": "Подтвердите ваш email",
+            "body": "Спасибо за регистрацию! Подтвердите ваш email, чтобы начать. Ссылка действительна 24 часа.",
+            "button": "Подтвердить email",
+            "fallback": "Или скопируйте и вставьте эту ссылку в браузер:",
+            "footer": "Если вы не создавали аккаунт в YAPP, можете проигнорировать это письмо. Возможно, ваш email указали по ошибке."
+        }
+    }
+}

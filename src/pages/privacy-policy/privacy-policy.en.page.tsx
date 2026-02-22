@@ -1,15 +1,12 @@
-import { getTranslations } from 'next-intl/server';
 import { BackButton } from 'src/shared/ui/back-button';
 
-export async function PrivacyPolicyPage() {
-    const t = await getTranslations('legal');
-
+export function PrivacyPolicyPage() {
     return (
         <div className="mx-auto max-w-3xl px-6 py-12">
-            <BackButton label={t('back')} />
+            <BackButton label="← Back" />
 
             <div className="prose prose-neutral dark:prose-invert mt-8">
-                <h1>{t('privacyPolicyTitle')}</h1>
+                <h1>Privacy Policy</h1>
                 <p className="text-muted-foreground text-sm">Effective date: February 22, 2026</p>
 
                 <h2>1. Introduction</h2>

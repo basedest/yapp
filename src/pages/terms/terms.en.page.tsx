@@ -1,16 +1,13 @@
 import Link from 'next/link';
-import { getTranslations } from 'next-intl/server';
 import { BackButton } from 'src/shared/ui/back-button';
 
-export async function TermsPage() {
-    const t = await getTranslations('legal');
-
+export function TermsPage() {
     return (
         <div className="mx-auto max-w-3xl px-6 py-12">
-            <BackButton label={t('back')} />
+            <BackButton label="← Back" />
 
             <div className="prose prose-neutral dark:prose-invert mt-8">
-                <h1>{t('termsTitle')}</h1>
+                <h1>Terms of Service</h1>
                 <p className="text-muted-foreground text-sm">Effective date: February 22, 2026</p>
 
                 <h2>1. Agreement to Terms</h2>
@@ -69,7 +66,7 @@ export async function TermsPage() {
                     We may suspend or terminate your account at any time for violation of these Terms, extended
                     inactivity, or at our discretion. You may delete your account at any time through the account
                     settings. Upon termination, your data will be deleted in accordance with our{' '}
-                    <Link href="/privacy-policy">Privacy Policy</Link>.
+                    <Link href="/en/privacy-policy">Privacy Policy</Link>.
                 </p>
 
                 <h2>8. Limitation of Liability</h2>

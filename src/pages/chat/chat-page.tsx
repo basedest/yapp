@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { trpc } from 'src/shared/api/trpc/client';
+import { getLegalLinks } from 'src/shared/lib/legal-links';
 import { useAuthDialog } from 'src/features/auth/auth-dialog';
 import { getClientConfig } from 'src/shared/config/env/client';
 import { authClient } from 'src/shared/lib/auth/auth.client';
@@ -65,6 +66,7 @@ function mapErrorType(error: unknown): ErrorType {
 export function ChatView({ chatId }: ChatViewProps) {
     const t = useTranslations('chat');
     const tAuth = useTranslations('auth');
+    const legal = getLegalLinks(useLocale());
     const utils = trpc.useUtils();
     const clientConfig = getClientConfig();
     const { data: session, isPending: sessionPending } = authClient.useSession();
@@ -175,8 +177,7 @@ export function ChatView({ chatId }: ChatViewProps) {
                                 await utils.tokenTracking.getUsage.invalidate();
                                 // Stay on root page, update URL only - avoids remount/empty-state flicker
                                 if (typeof window !== 'undefined') {
-                                    const locale = window.location.pathname.split('/').filter(Boolean)[0] ?? 'en';
-                                    window.history.replaceState(null, '', `/${locale}/chat/${chat.id}`);
+                                    window.history.replaceState(null, '', `/chat/${chat.id}`);
                                 }
                             },
                             onError: (error) => {
@@ -291,13 +292,13 @@ export function ChatView({ chatId }: ChatViewProps) {
                     <div className="w-full md:max-w-3xl md:px-4">{messageInputEl}</div>
                 </div>
                 {!session && !sessionPending && (
-                    <p className="text-muted-foreground dark:text-muted-foreground/40 text-center text-xs">
+                    <p className="text-muted-foreground text-center text-xs">
                         {tAuth('agreeToContinue')}{' '}
-                        <Link href="/terms" className="hover:text-primary underline underline-offset-4">
+                        <Link href={legal.terms} className="hover:text-primary underline underline-offset-4">
                             {tAuth('termsOfService')}
                         </Link>{' '}
                         {tAuth('and')}{' '}
-                        <Link href="/privacy-policy" className="hover:text-primary underline underline-offset-4">
+                        <Link href={legal.privacyPolicy} className="hover:text-primary underline underline-offset-4">
                             {tAuth('privacyPolicy')}
                         </Link>
                         .

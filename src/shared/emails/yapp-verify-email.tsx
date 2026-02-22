@@ -41,7 +41,8 @@ type VerificationEmailProps = {
 };
 
 export default async function VerificationEmail({ url, locale = 'en' }: VerificationEmailProps) {
-    const messages = await import(`../lib/locales/${locale}.json`);
+    // NOTE: can't use import path aliases here because react-email doesn't support them
+    const messages = await import(`../../../i18n/locales/${locale}.json`);
     const t = createTranslator({ messages, namespace: 'email.verifyEmail', locale });
 
     return (

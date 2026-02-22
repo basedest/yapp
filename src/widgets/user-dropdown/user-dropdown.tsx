@@ -15,6 +15,7 @@ import {
     DropdownMenuTrigger,
 } from 'src/shared/ui/dropdown-menu';
 import { ThemeToggle } from 'src/features/theme/toggle-theme';
+import { LocaleToggle } from 'src/features/locale';
 import { SidebarMenuButton, useSidebar } from 'src/shared/ui/sidebar';
 import { Avatar } from 'src/shared/ui/avatar';
 import { AvatarImage } from 'src/shared/ui/avatar';
@@ -120,6 +121,7 @@ export function UserDropdown() {
                     </Link>
                 </DropdownMenuItem>
                 <ThemeToggle />
+                <LocaleToggle />
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={handleLogout} className="flex items-center gap-2">
                     <LogOut className="size-4" />

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { LoginForm } from 'src/features/auth/login';
 import { GoogleSignInButton } from 'src/features/auth/social-login';
+import { SettingsDropdown } from 'src/features/settings';
 import { getServerConfig } from 'src/shared/config/env';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'src/shared/ui/card';
 import { AppTitle } from '~/src/shared/ui/app-title';
@@ -13,6 +14,9 @@ export async function LoginView() {
 
     return (
         <div className="bg-muted flex min-h-screen flex-col items-center justify-center gap-6 p-6 md:p-10">
+            <div className="absolute top-4 right-4">
+                <SettingsDropdown />
+            </div>
             <div className="flex w-full max-w-sm flex-col gap-6">
                 <div className="flex items-center gap-2 self-center font-medium">
                     <YappLogo size={24} className="text-primary shrink-0" />

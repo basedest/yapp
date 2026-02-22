@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 
 import { useChats } from 'src/entities/chat';
 import { useAuthDialog } from 'src/features/auth/auth-dialog';
+import { SettingsDropdown } from 'src/features/settings';
 import { getClientConfig } from 'src/shared/config/env/client';
 import { authClient } from 'src/shared/lib/auth/auth.client';
 import { Button } from 'src/shared/ui/button';
@@ -78,7 +79,8 @@ export function ChatHeader() {
                 )}
             </div>
             {!session && !isPending && (
-                <div className="ml-auto flex gap-2">
+                <div className="ml-auto flex items-center gap-2">
+                    <SettingsDropdown />
                     <Button variant="ghost" size="sm" onClick={openSignIn}>
                         {tAuth('signIn')}
                     </Button>

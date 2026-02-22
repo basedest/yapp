@@ -1,8 +1,10 @@
 import Link from 'next/link';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { RegisterForm } from 'src/features/auth/register';
 import { GoogleSignInButton } from 'src/features/auth/social-login';
+import { SettingsDropdown } from 'src/features/settings';
 import { getServerConfig } from 'src/shared/config/env';
+import { getLegalLinks } from 'src/shared/lib/legal-links';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'src/shared/ui/card';
 import { AppTitle } from '~/src/shared/ui/app-title';
 import { YappLogo } from '~/src/shared/ui/yapp-logo';
@@ -10,9 +12,14 @@ import { YappLogo } from '~/src/shared/ui/yapp-logo';
 export async function RegisterView() {
     const t = await getTranslations('auth');
     const config = getServerConfig();
+    const locale = await getLocale();
+    const legal = getLegalLinks(locale);
 
     return (
         <div className="bg-muted flex min-h-screen flex-col items-center justify-center gap-6 p-6 md:p-10">
+            <div className="absolute top-4 right-4">
+                <SettingsDropdown />
+            </div>
             <div className="flex w-full max-w-sm flex-col gap-6">
                 <div className="flex items-center gap-2 self-center font-medium">
                     <YappLogo size={24} className="text-primary shrink-0" />
@@ -49,12 +56,12 @@ export async function RegisterView() {
                     </CardContent>
                 </Card>
                 <p className="text-muted-foreground text-center text-xs">
-                    By creating an account you agree to our{' '}
-                    <Link href="/terms" className="hover:text-primary underline underline-offset-4">
+                    {t('agreeToTerms')}{' '}
+                    <Link href={legal.terms} className="hover:text-primary underline underline-offset-4">
                         {t('termsOfService')}
                     </Link>{' '}
-                    and{' '}
-                    <Link href="/privacy-policy" className="hover:text-primary underline underline-offset-4">
+                    {t('and')}{' '}
+                    <Link href={legal.privacyPolicy} className="hover:text-primary underline underline-offset-4">
                         {t('privacyPolicy')}
                     </Link>
                     .

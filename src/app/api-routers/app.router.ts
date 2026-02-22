@@ -4,6 +4,7 @@ import { messageRouter } from './message.router';
 import { tokenTrackingRouter } from './token-tracking.router';
 import { piiDetectionRouter } from './pii-detection.router';
 import { piiDetectionAdminRouter } from './admin.router';
+import { userRouter } from './user.router';
 
 /**
  * Root tRPC router
@@ -15,6 +16,7 @@ export const appRouter = createTRPCRouter({
     tokenTracking: tokenTrackingRouter,
     piiDetection: piiDetectionRouter,
     piiDetectionAdmin: piiDetectionAdminRouter,
+    user: userRouter,
 });
 
 export type AppRouter = typeof appRouter;

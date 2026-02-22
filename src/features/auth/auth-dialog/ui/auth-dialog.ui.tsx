@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { getLegalLinks } from 'src/shared/lib/legal-links';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'src/shared/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'src/shared/ui/tabs';
 import { LoginForm } from 'src/features/auth/login';
@@ -26,6 +27,7 @@ function OrSeparator({ label }: { label: string }) {
 export function AuthDialog() {
     const t = useTranslations('auth');
     const router = useRouter();
+    const legal = getLegalLinks(useLocale());
     const { open, defaultTab, close } = useAuthDialog();
 
     return (
@@ -59,11 +61,14 @@ export function AuthDialog() {
                         <RegisterForm />
                         <p className="text-muted-foreground text-center text-xs">
                             {t('agreeToTerms')}{' '}
-                            <Link href="/terms" className="hover:text-primary underline underline-offset-4">
+                            <Link href={legal.terms} className="hover:text-primary underline underline-offset-4">
                                 {t('termsOfService')}
                             </Link>{' '}
                             {t('and')}{' '}
-                            <Link href="/privacy-policy" className="hover:text-primary underline underline-offset-4">
+                            <Link
+                                href={legal.privacyPolicy}
+                                className="hover:text-primary underline underline-offset-4"
+                            >
                                 {t('privacyPolicy')}
                             </Link>
                             .

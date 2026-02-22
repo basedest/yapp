@@ -26,7 +26,7 @@ export const auth = betterAuth({
         autoSignInAfterVerification: true,
         sendVerificationEmail: async ({ user, url }) => {
             const locale = 'en';
-            const messages = (await import('src/shared/lib/locales/en.json')).default;
+            const messages = (await import('~/i18n/locales/en.json')).default;
             const t = createTranslator({ messages, namespace: 'email.verifyEmail', locale });
             const mailer = getMailer();
             void mailer.send({

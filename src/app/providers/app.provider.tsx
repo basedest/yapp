@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { TRPCProvider } from './api.provider';
 import { ThemeProvider } from './theme.provider';
 import { TimezoneSync } from './timezone-sync';
+import { LocaleSync } from './locale-sync';
 import { SidebarProvider } from 'src/shared/ui/sidebar';
 
 type AppProviderProps = {
@@ -17,6 +18,7 @@ export function AppProvider({ children, locale, messages }: AppProviderProps) {
         <TRPCProvider>
             <TimezoneSync />
             <NextIntlClientProvider locale={locale} messages={messages ?? undefined}>
+                <LocaleSync />
                 <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
                     <SidebarProvider defaultOpen={true}>{children}</SidebarProvider>
                 </ThemeProvider>
