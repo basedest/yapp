@@ -7,6 +7,8 @@ import { logger } from 'src/shared/backend/logger';
 import { getServerConfig } from 'src/shared/config/env';
 import { getMailer } from 'src/shared/backend/mailer';
 import VerificationEmail from '~/src/shared/emails/yapp-verify-email';
+import { LOCALE_COOKIE } from 'src/shared/lib/locale';
+import { routing } from '~/i18n/routing';
 
 const config = getServerConfig();
 
@@ -24,9 +26,20 @@ export const auth = betterAuth({
         sendOnSignUp: true,
         sendOnSignIn: true,
         autoSignInAfterVerification: true,
-        sendVerificationEmail: async ({ user, url }) => {
-            const locale = 'en';
-            const messages = (await import('~/i18n/locales/en.json')).default;
+        sendVerificationEmail: async ({ user, url }, req) => {
+            // workaround for locale detection in email verification
+            const cookieLocale = req?.headers
+                .get('cookie')
+                ?.split('; ')
+                .find((row) => row.startsWith(LOCALE_COOKIE))
+                ?.split('=')[1]
+                ?.trim();
+            const locale =
+                cookieLocale && (routing.locales as readonly string[]).includes(cookieLocale)
+                    ? cookieLocale
+                    : routing.defaultLocale;
+
+            const messages = (await import(`~/i18n/locales/${locale}.json`)).default;
             const t = createTranslator({ messages, namespace: 'email.verifyEmail', locale });
             const mailer = getMailer();
             void mailer.send({
