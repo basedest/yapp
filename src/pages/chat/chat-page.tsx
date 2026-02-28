@@ -14,6 +14,8 @@ import { ErrorBanner } from 'src/widgets/error-banner';
 import { useStreamMessage } from 'src/features/message/send-message/use-stream-message';
 import { ChatHeader } from 'src/widgets/chat-header';
 import { useChats } from 'src/entities/chat';
+import { ModelSelector } from 'src/features/model/select-model';
+import { DEFAULT_MODEL_ID } from 'src/shared/config/models';
 import { Skeleton } from 'src/shared/ui/skeleton';
 
 const GREETING_COUNT = 8;
@@ -24,6 +26,7 @@ type DisplayMessage = {
     role: 'user' | 'assistant' | 'system';
     content: string;
     tokenCount: number;
+    model?: string | null;
     createdAt: Date;
 };
 type MessageListItem = {
@@ -31,6 +34,7 @@ type MessageListItem = {
     role: string;
     content: string;
     tokenCount: number;
+    model?: string | null;
     createdAt: Date | string;
 };
 
@@ -75,9 +79,11 @@ export function ChatView({ chatId }: ChatViewProps) {
     const [optimisticMessage, setOptimisticMessage] = useState<DisplayMessage | null>(null);
     const [committedMessages, setCommittedMessages] = useState<DisplayMessage[] | null>(null);
     const [pendingChatId, setPendingChatId] = useState<string | null>(null);
+    const [modelOverride, setModelOverride] = useState<{ chatId: string | undefined; model: string } | null>(null);
     const [greetingIndex] = useState(() => Math.floor(Math.random() * GREETING_COUNT));
 
     const {
+        chats,
         loadingChats,
         selectedChatId,
         messageInput,
@@ -92,6 +98,14 @@ export function ChatView({ chatId }: ChatViewProps) {
         { conversationId: activeChatId! },
         { enabled: !!activeChatId && !!session },
     );
+
+    // Resolve default model for new chats from last-used
+    const { data: lastUsedModel } = trpc.chat.getLastUsedModel.useQuery(undefined, {
+        enabled: !!session && !activeChatId,
+    });
+
+    // Update model mutation for mid-conversation switching
+    const updateModelMutation = trpc.chat.updateModel.useMutation();
 
     const { isStreaming, streamingContent, piiMaskRegions, sendMessage } = useStreamMessage();
 
@@ -113,6 +127,16 @@ export function ChatView({ chatId }: ChatViewProps) {
         isStreaming,
         createChatMutation.isPending,
     ]);
+
+    // Derive active model: explicit override (scoped to current chat) > conversation model > last-used > default
+    const selectedModel = useMemo(() => {
+        if (modelOverride && modelOverride.chatId === activeChatId) return modelOverride.model;
+        if (activeChatId && chats.length > 0) {
+            const chat = chats.find((c) => c.id === activeChatId);
+            if (chat?.model) return chat.model;
+        }
+        return lastUsedModel?.model ?? DEFAULT_MODEL_ID;
+    }, [modelOverride, activeChatId, chats, lastUsedModel?.model]);
 
     // Clear committed messages once the DB query has caught up (all IDs present in fresh data).
     useEffect(() => {
@@ -144,6 +168,13 @@ export function ChatView({ chatId }: ChatViewProps) {
         return null;
     }, [streamError, createChatMutation.error, deleteChatMutation.error]);
 
+    const handleModelChange = (modelId: string) => {
+        setModelOverride({ chatId: activeChatId, model: modelId });
+        if (activeChatId) {
+            updateModelMutation.mutate({ id: activeChatId, model: modelId });
+        }
+    };
+
     const handleSendMessage = async () => {
         if (!messageInput.trim() || isStreaming || createChatMutation.isPending) return;
         if (!session) {
@@ -172,13 +203,14 @@ export function ChatView({ chatId }: ChatViewProps) {
             // Generate title from first message (truncate to maxConversationTitleLength)
             const title = content.slice(0, clientConfig.chat.maxConversationTitleLength);
             createChatMutation.mutate(
-                { title },
+                { title, model: selectedModel },
                 {
                     onSuccess: async (chat) => {
                         setPendingChatId(chat.id);
                         await sendMessage({
                             conversationId: chat.id,
                             content,
+                            model: selectedModel,
                             onComplete: ({ userMessageId, assistantMessageId, totalTokens, assistantContent }) => {
                                 // Immediately show both messages via React state so there is no
                                 // blank flash between streamingContent clearing and the DB refetch.
@@ -194,6 +226,7 @@ export function ChatView({ chatId }: ChatViewProps) {
                                         role: 'assistant',
                                         content: assistantContent,
                                         tokenCount: totalTokens,
+                                        model: selectedModel,
                                         createdAt: now,
                                     },
                                 ]);
@@ -224,6 +257,7 @@ export function ChatView({ chatId }: ChatViewProps) {
             await sendMessage({
                 conversationId: activeChatId,
                 content,
+                model: selectedModel,
                 onComplete: ({ userMessageId, assistantMessageId, totalTokens, assistantContent }) => {
                     const now = new Date();
                     setCommittedMessages((prev) => [
@@ -337,7 +371,18 @@ export function ChatView({ chatId }: ChatViewProps) {
                             {!session && !sessionPending ? t('guestGreeting') : t(`greetings.${greetingIndex}`)}
                         </h1>
                     </div>
-                    <div className="w-full md:max-w-3xl md:px-4">{messageInputEl}</div>
+                    <div className="w-full md:max-w-3xl md:px-4">
+                        {session && (
+                            <div className="mb-2 flex justify-center">
+                                <ModelSelector
+                                    value={selectedModel}
+                                    onChange={handleModelChange}
+                                    disabled={isStreaming}
+                                />
+                            </div>
+                        )}
+                        {messageInputEl}
+                    </div>
                 </div>
                 {!session && !sessionPending && (
                     <p className="text-muted-foreground text-center text-xs">
@@ -359,6 +404,9 @@ export function ChatView({ chatId }: ChatViewProps) {
     return (
         <div className="flex flex-1 flex-col">
             <ChatHeader />
+            <div className="border-b px-4 py-1">
+                <ModelSelector value={selectedModel} onChange={handleModelChange} disabled={isStreaming} />
+            </div>
             {errorBannerEl}
             <MessageList
                 messages={displayMessages}

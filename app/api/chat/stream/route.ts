@@ -15,6 +15,7 @@ import type { ChatStreamUseCase } from 'src/shared/backend/use-cases/chat-stream
 const requestSchema = z.object({
     conversationId: z.cuid(),
     content: z.string().min(1).max(4000),
+    model: z.string().optional(),
 });
 
 function jsonResponse(body: unknown, status: number) {
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
             return jsonResponse({ error: 'Invalid request', details: parseResult.error.issues }, 400);
         }
 
-        const { conversationId, content } = parseResult.data;
+        const { conversationId, content, model } = parseResult.data;
         const container = getBackendContainer();
         const useCase = container.resolve<ChatStreamUseCase>(CHAT_STREAM_USE_CASE);
 
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
             userId: session.user.id,
             conversationId,
             content,
+            model,
         });
 
         return new Response(stream, {

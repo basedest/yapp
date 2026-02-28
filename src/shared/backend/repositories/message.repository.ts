@@ -13,20 +13,21 @@ export class MessageRepository implements IMessageRepository {
 
     async findConversation(conversationId: string): Promise<ConversationInfo | null> {
         const conversation = await this.prisma.conversation.findUnique({
-            where: { id: conversationId },
-            select: { userId: true, _count: { select: { messages: true } } },
+            where: { id: conversationId, deletedAt: null },
+            select: { userId: true, modelId: true, _count: { select: { messages: { where: { deletedAt: null } } } } },
         });
         if (!conversation) return null;
         return {
             userId: conversation.userId,
             messageCount: conversation._count.messages,
+            modelId: conversation.modelId,
         };
     }
 
     async findContextMessages(conversationId: string, limit: number): Promise<ChatMessage[]> {
         const messages = await this.prisma.message.findMany({
-            where: { conversationId },
-            orderBy: { createdAt: 'desc' },
+            where: { conversationId, deletedAt: null },
+            orderBy: { position: 'desc' },
             take: limit,
             select: { role: true, content: true },
         });
@@ -36,6 +37,15 @@ export class MessageRepository implements IMessageRepository {
         }));
     }
 
+    async getNextPosition(conversationId: string): Promise<number> {
+        const last = await this.prisma.message.findFirst({
+            where: { conversationId, deletedAt: null },
+            orderBy: { position: 'desc' },
+            select: { position: true },
+        });
+        return (last?.position ?? 0) + 1;
+    }
+
     async createMessage(input: CreateMessageInput): Promise<CreatedMessage> {
         const message = await this.prisma.message.create({
             data: {
@@ -43,6 +53,11 @@ export class MessageRepository implements IMessageRepository {
                 role: input.role,
                 content: input.content,
                 tokenCount: input.tokenCount ?? 0,
+                modelId: input.modelId ?? null,
+                cost: input.cost ?? 0,
+                position: input.position,
+                inputCostPer1MSnapshot: input.inputCostPer1MSnapshot ?? null,
+                outputCostPer1MSnapshot: input.outputCostPer1MSnapshot ?? null,
             },
         });
         return { id: message.id, createdAt: message.createdAt };
@@ -57,5 +72,12 @@ export class MessageRepository implements IMessageRepository {
 
     async deleteMessage(messageId: string): Promise<void> {
         await this.prisma.message.delete({ where: { id: messageId } });
+    }
+
+    async softDeleteMessage(messageId: string): Promise<void> {
+        await this.prisma.message.update({
+            where: { id: messageId },
+            data: { deletedAt: new Date() },
+        });
     }
 }

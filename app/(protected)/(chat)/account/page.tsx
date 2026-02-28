@@ -1,5 +1,5 @@
-import { AccountView } from 'src/pages/account';
+import { redirect } from 'next/navigation';
 
 export default function AccountPage() {
-    return <AccountView />;
+    redirect('/settings');
 }

@@ -7,6 +7,7 @@ import { authClient } from 'src/shared/lib/auth/auth.client';
 type ChatListItem = {
     id: string;
     title: string;
+    model: string;
     totalTokens: number;
     updatedAt: Date;
     _count: {

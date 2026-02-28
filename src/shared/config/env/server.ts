@@ -112,6 +112,7 @@ const serverEnvSchema = rawServerEnvSchema.transform((raw): ServerConfig => {
         chat: {
             // Token quotas
             dailyTokenLimit: 50_000,
+            dailyCostBudgetUsd: 0.5,
 
             // Conversation limits
             maxConversationsPerUser: 25,
@@ -159,6 +160,7 @@ export type ServerConfig = {
     logLevel: 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'trace';
     chat: {
         dailyTokenLimit: number;
+        dailyCostBudgetUsd: number;
         maxConversationsPerUser: number;
         maxConversationTitleLength: number;
         maxMessageLength: number;

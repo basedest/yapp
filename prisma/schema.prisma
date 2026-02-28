@@ -7,6 +7,37 @@ datasource db {
   provider = "postgresql"
 }
 
+enum MessageRole {
+  user
+  assistant
+  system
+}
+
+enum ModelTier {
+  free
+  standard
+  premium
+}
+
+enum ModelDeveloper {
+  openai
+  anthropic
+  google
+  meta
+  deepseek
+  mistral
+}
+
+enum ModelProvider {
+  openrouter
+  openai
+  anthropic
+  google
+  meta
+  deepseek
+  mistral
+}
+
 // Better Auth: core tables for credentials and session
 model User {
   id            String          @id @default(cuid())
@@ -64,35 +95,81 @@ model Verification {
   @@index([identifier])
 }
 
+// AI Model catalog
+model AiModel {
+  id               String          @id
+  name             String
+  developer        ModelDeveloper
+  provider         ModelProvider
+  descriptionShort String?
+  descriptionLong  String?         @db.Text
+  throughput       Int?            // tok/s
+  latency          Int?            // ms
+  contextWindow    Int
+  inputCostPer1M   Int             // micro-USD
+  outputCostPer1M  Int             // micro-USD
+  tier             ModelTier
+  archived         Boolean         @default(false)
+  enabled          Boolean         @default(true)
+  sortOrder        Int
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  capabilities     ModelCapability[]
+  messages         Message[]
+  conversations    Conversation[]
+
+  @@index([enabled, archived])
+}
+
+model ModelCapability {
+  id     String    @id
+  name   String    @unique
+  models AiModel[]
+}
+
 // AI Chat: conversations, messages, and token usage tracking
 model Conversation {
   id          String    @id @default(cuid())
   userId      String
   title       String    // From first user message, max 50 chars
+  modelId     String    @default("openai/gpt-4o-mini")
   totalTokens Int       @default(0)
+  totalCost   Int       @default(0)  // micro-USD
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiModel     AiModel   @relation(fields: [modelId], references: [id])
   messages    Message[]
   piiDetectionCosts PiiDetectionCost[]
 
   @@index([userId])
   @@index([createdAt])
+  @@index([userId, deletedAt])
 }
 
 model Message {
-  id             String         @id @default(cuid())
-  conversationId String
-  role           String         // "user" | "assistant" | "system"
-  content        String         @db.Text
-  tokenCount     Int            @default(0)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  conversation   Conversation   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  piiDetections  PiiDetection[]
+  id                       String         @id @default(cuid())
+  conversationId           String
+  role                     MessageRole
+  content                  String         @db.Text
+  modelId                  String?        // OpenRouter model ID (null for user messages)
+  tokenCount               Int            @default(0)
+  cost                     Int            @default(0)  // micro-USD
+  inputCostPer1MSnapshot   Int?           // micro-USD at time of send
+  outputCostPer1MSnapshot  Int?
+  position                 Int            // ordering within conversation
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+  deletedAt                DateTime?
+  conversation             Conversation   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  aiModel                  AiModel?       @relation(fields: [modelId], references: [id], onDelete: SetNull)
+  piiDetections            PiiDetection[]
 
+  @@unique([conversationId, position])
   @@index([conversationId])
   @@index([createdAt])
+  @@index([conversationId, deletedAt])
 }
 
 // PII detection metadata for audit; never stores original PII values
@@ -118,6 +195,7 @@ model TokenUsage {
   userId      String
   date        DateTime @db.Date // Daily aggregate, date only
   totalTokens Int      @default(0)
+  totalCost   Int      @default(0)  // micro-USD
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -1,9 +1,11 @@
 import 'server-only';
 import type { PrismaClient } from 'src/generated/prisma/client';
 import { logger } from 'src/shared/backend/logger';
+import { toMicroUSD } from 'src/shared/config/models';
 
 export type ChatTokenConfig = {
     dailyTokenLimit: number;
+    dailyCostBudgetUsd: number;
 };
 
 export type TokenUsageResult = {
@@ -11,6 +13,8 @@ export type TokenUsageResult = {
     limit: number;
     remaining: number;
     resetAt: Date;
+    costUsed: number;
+    costBudget: number;
 };
 
 export type QuotaCheckResult = {
@@ -50,39 +54,48 @@ export class TokenTrackingService {
         if (!check.allowed) {
             const resetTime = check.usage.resetAt.toISOString();
             logger.warn(
-                { userId, used: check.usage.used, limit: check.usage.limit },
-                'User exceeded daily token quota',
+                { userId, costUsed: check.usage.costUsed, costBudget: check.usage.costBudget },
+                'User exceeded daily cost quota',
             );
-            throw new Error(
-                `Daily token quota exceeded. Used ${check.usage.used}/${check.usage.limit} tokens. Quota resets at ${resetTime}.`,
-            );
+            throw new Error(`Daily quota exceeded. Quota resets at ${resetTime}.`);
         }
     }
 
-    async trackUsage(userId: string, tokenCount: number): Promise<void> {
+    async trackUsage(userId: string, tokenCount: number, cost?: number): Promise<void> {
         const today = getTodayUTC();
         try {
             await this.prisma.tokenUsage.upsert({
                 where: {
                     userId_date: { userId, date: today },
                 },
-                update: { totalTokens: { increment: tokenCount } },
-                create: { userId, date: today, totalTokens: tokenCount },
+                update: {
+                    totalTokens: { increment: tokenCount },
+                    ...(cost != null ? { totalCost: { increment: cost } } : {}),
+                },
+                create: {
+                    userId,
+                    date: today,
+                    totalTokens: tokenCount,
+                    totalCost: cost ?? 0,
+                },
             });
-            logger.debug({ userId, tokenCount, date: today }, 'Token usage tracked');
+            logger.debug({ userId, tokenCount, cost, date: today }, 'Token usage tracked');
         } catch (error) {
             logger.error({ error, userId, tokenCount }, 'Failed to track token usage');
             throw error;
         }
     }
 
-    async updateConversationTokens(conversationId: string, tokenCount: number): Promise<void> {
+    async updateConversationTokens(conversationId: string, tokenCount: number, cost?: number): Promise<void> {
         try {
             await this.prisma.conversation.update({
                 where: { id: conversationId },
-                data: { totalTokens: { increment: tokenCount } },
+                data: {
+                    totalTokens: { increment: tokenCount },
+                    ...(cost != null ? { totalCost: { increment: cost } } : {}),
+                },
             });
-            logger.debug({ conversationId, tokenCount }, 'Conversation tokens updated');
+            logger.debug({ conversationId, tokenCount, cost }, 'Conversation tokens updated');
         } catch (error) {
             logger.error({ error, conversationId, tokenCount }, 'Failed to update conversation tokens');
             throw error;
@@ -95,15 +108,18 @@ export class TokenTrackingService {
             where: { userId_date: { userId, date: today } },
         });
         const used = usage?.totalTokens ?? 0;
+        const costUsed = usage?.totalCost ?? 0; // micro-USD
         const limit = this.config.dailyTokenLimit;
+        const costBudget = toMicroUSD(this.config.dailyCostBudgetUsd); // micro-USD
         const remaining = Math.max(0, limit - used);
-        return { used, limit, remaining, resetAt: getTomorrowUTC() };
+        return { used, limit, remaining, resetAt: getTomorrowUTC(), costUsed, costBudget };
     }
 
     async checkQuota(userId: string): Promise<QuotaCheckResult> {
         const usage = await this.getCurrentUsage(userId);
-        const allowed = usage.remaining > 0;
-        logger.debug({ userId, used: usage.used, remaining: usage.remaining, allowed }, 'Token quota check');
+        // Cost-based quota check takes priority
+        const allowed = usage.costUsed < usage.costBudget;
+        logger.debug({ userId, costUsed: usage.costUsed, costBudget: usage.costBudget, allowed }, 'Cost quota check');
         return { allowed, usage };
     }
 }

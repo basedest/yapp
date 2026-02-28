@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { ChevronsUpDown, LogOut, User } from 'lucide-react';
+import { ChevronsUpDown, LogOut, Settings } from 'lucide-react';
 import { authClient } from 'src/shared/lib/auth/auth.client';
 import { useAuthDialog } from 'src/features/auth/auth-dialog';
 import {
@@ -115,8 +115,8 @@ export function UserDropdown() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                    <Link href="/account" className="flex cursor-pointer items-center gap-2">
-                        <User className="size-4" />
+                    <Link href="/settings" className="flex cursor-pointer items-center gap-2">
+                        <Settings className="size-4" />
                         {t('title')}
                     </Link>
                 </DropdownMenuItem>

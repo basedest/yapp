@@ -6,6 +6,7 @@ import { getServerConfig } from 'src/shared/config/env';
 import { logger } from 'src/shared/backend/logger';
 import { CACHE_SERVICE } from 'src/shared/backend/container';
 import { CacheKeys, type ICacheService } from 'src/shared/backend/cache';
+import { DEFAULT_MODEL_ID, isValidModelId } from 'src/shared/config/models';
 
 export const chatRouter = createTRPCRouter({
     /**
@@ -15,6 +16,7 @@ export const chatRouter = createTRPCRouter({
         .input(
             z.object({
                 title: z.string().min(1).max(50),
+                model: z.string().optional(),
             }),
         )
         .mutation(async ({ ctx, input }) => {
@@ -22,7 +24,7 @@ export const chatRouter = createTRPCRouter({
 
             // Check chat limit
             const count = await prisma.conversation.count({
-                where: { userId: ctx.userId },
+                where: { userId: ctx.userId, deletedAt: null },
             });
 
             if (count >= config.chat.maxConversationsPerUser) {
@@ -33,19 +35,34 @@ export const chatRouter = createTRPCRouter({
                 });
             }
 
+            // Resolve model: explicit param → last-used → global default
+            let model = input.model;
+            if (!model) {
+                const lastConversation = await prisma.conversation.findFirst({
+                    where: { userId: ctx.userId, deletedAt: null },
+                    orderBy: { updatedAt: 'desc' },
+                    select: { modelId: true },
+                });
+                model = lastConversation?.modelId ?? DEFAULT_MODEL_ID;
+            }
+            if (!isValidModelId(model)) {
+                model = DEFAULT_MODEL_ID;
+            }
+
             // Create conversation
             const conversation = await prisma.conversation.create({
                 data: {
                     userId: ctx.userId,
                     title: input.title.slice(0, config.chat.maxConversationTitleLength),
+                    modelId: model,
                 },
             });
 
-            logger.info({ conversationId: conversation.id, userId: ctx.userId }, 'Conversation created');
+            logger.info({ conversationId: conversation.id, userId: ctx.userId, model }, 'Conversation created');
 
             await ctx.container.resolve<ICacheService>(CACHE_SERVICE).del(CacheKeys.chatList(ctx.userId));
 
-            return conversation;
+            return { ...conversation, model: conversation.modelId };
         }),
 
     /**
@@ -58,22 +75,26 @@ export const chatRouter = createTRPCRouter({
         if (cached !== undefined) return cached;
 
         const conversations = await prisma.conversation.findMany({
-            where: { userId: ctx.userId },
+            where: { userId: ctx.userId, deletedAt: null },
             orderBy: { createdAt: 'desc' },
             select: {
                 id: true,
                 title: true,
+                modelId: true,
                 totalTokens: true,
                 createdAt: true,
                 updatedAt: true,
                 _count: {
-                    select: { messages: true },
+                    select: { messages: { where: { deletedAt: null } } },
                 },
             },
         });
 
-        await cache.set(key, conversations, 120);
-        return conversations;
+        // Expose modelId as `model` for backward compatibility with frontend
+        const result = conversations.map((c) => ({ ...c, model: c.modelId }));
+
+        await cache.set(key, result, 120);
+        return result;
     }),
 
     /**
@@ -87,10 +108,11 @@ export const chatRouter = createTRPCRouter({
         )
         .query(async ({ ctx, input }) => {
             const conversation = await prisma.conversation.findUnique({
-                where: { id: input.id },
+                where: { id: input.id, deletedAt: null },
                 include: {
                     messages: {
-                        orderBy: { createdAt: 'asc' },
+                        where: { deletedAt: null },
+                        orderBy: { position: 'asc' },
                         select: {
                             id: true,
                             role: true,
@@ -118,7 +140,7 @@ export const chatRouter = createTRPCRouter({
                 });
             }
 
-            return conversation;
+            return { ...conversation, model: conversation.modelId };
         }),
 
     /**
@@ -134,7 +156,7 @@ export const chatRouter = createTRPCRouter({
         .mutation(async ({ ctx, input }) => {
             const config = getServerConfig();
             const conversation = await prisma.conversation.findUnique({
-                where: { id: input.id },
+                where: { id: input.id, deletedAt: null },
                 select: { userId: true },
             });
 
@@ -163,11 +185,76 @@ export const chatRouter = createTRPCRouter({
 
             await ctx.container.resolve<ICacheService>(CACHE_SERVICE).del(CacheKeys.chatList(ctx.userId));
 
-            return updated;
+            return { ...updated, model: updated.modelId };
         }),
 
     /**
-     * Delete a conversation (cascade deletes messages)
+     * Update the model for an existing conversation (mid-conversation switch)
+     */
+    updateModel: protectedProcedure
+        .input(
+            z.object({
+                id: z.string().cuid(),
+                model: z.string().min(1),
+            }),
+        )
+        .mutation(async ({ ctx, input }) => {
+            if (!isValidModelId(input.model)) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `Invalid model: ${input.model}`,
+                });
+            }
+
+            const conversation = await prisma.conversation.findUnique({
+                where: { id: input.id, deletedAt: null },
+                select: { userId: true },
+            });
+
+            if (!conversation) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Conversation not found',
+                });
+            }
+
+            if (conversation.userId !== ctx.userId) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'You do not have permission to update this conversation',
+                });
+            }
+
+            const updated = await prisma.conversation.update({
+                where: { id: input.id },
+                data: { modelId: input.model },
+            });
+
+            logger.info(
+                { conversationId: input.id, userId: ctx.userId, model: input.model },
+                'Conversation model updated',
+            );
+
+            await ctx.container.resolve<ICacheService>(CACHE_SERVICE).del(CacheKeys.chatList(ctx.userId));
+
+            return { model: updated.modelId };
+        }),
+
+    /**
+     * Get the last used model for the current user (for new chat defaults)
+     */
+    getLastUsedModel: protectedProcedure.query(async ({ ctx }) => {
+        const lastConversation = await prisma.conversation.findFirst({
+            where: { userId: ctx.userId, deletedAt: null },
+            orderBy: { updatedAt: 'desc' },
+            select: { modelId: true },
+        });
+
+        return { model: lastConversation?.modelId ?? DEFAULT_MODEL_ID };
+    }),
+
+    /**
+     * Soft-delete a conversation (sets deletedAt)
      */
     delete: protectedProcedure
         .input(
@@ -178,7 +265,7 @@ export const chatRouter = createTRPCRouter({
         .mutation(async ({ ctx, input }) => {
             // Check ownership before deleting
             const conversation = await prisma.conversation.findUnique({
-                where: { id: input.id },
+                where: { id: input.id, deletedAt: null },
                 select: { userId: true },
             });
 
@@ -197,12 +284,13 @@ export const chatRouter = createTRPCRouter({
                 });
             }
 
-            // Delete conversation (cascade deletes messages)
-            await prisma.conversation.delete({
+            // Soft delete: set deletedAt
+            await prisma.conversation.update({
                 where: { id: input.id },
+                data: { deletedAt: new Date() },
             });
 
-            logger.info({ conversationId: input.id, userId: ctx.userId }, 'Conversation deleted');
+            logger.info({ conversationId: input.id, userId: ctx.userId }, 'Conversation soft-deleted');
 
             const cache = ctx.container.resolve<ICacheService>(CACHE_SERVICE);
             await cache.del(CacheKeys.chatList(ctx.userId));
@@ -216,7 +304,7 @@ export const chatRouter = createTRPCRouter({
      */
     count: protectedProcedure.query(async ({ ctx }) => {
         const count = await prisma.conversation.count({
-            where: { userId: ctx.userId },
+            where: { userId: ctx.userId, deletedAt: null },
         });
 
         const config = getServerConfig();

@@ -9,6 +9,7 @@ type Message = {
     role: 'user' | 'assistant' | 'system';
     content: string;
     tokenCount: number;
+    model?: string | null;
     createdAt: Date;
     piiMaskRegions?: PiiMaskRegion[];
 };
@@ -67,6 +68,7 @@ export function MessageList({
                         content={message.content}
                         timestamp={message.createdAt}
                         tokenCount={message.tokenCount}
+                        model={message.model}
                         piiMaskRegions={message.piiMaskRegions}
                         messageId={message.id}
                     />

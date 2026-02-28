@@ -4,6 +4,7 @@ import type { ChatMessage } from 'src/shared/backend/openrouter';
 import type { ServerConfig } from 'src/shared/config/env/server';
 import { logger } from 'src/shared/backend/logger';
 import { sanitizeInput } from 'src/shared/backend/lib/sanitize';
+import { calculateCost, getModelById, isValidModelId, toMicroUSD } from 'src/shared/config/models';
 import {
     ConversationNotFoundError,
     ForbiddenError,
@@ -24,6 +25,7 @@ export type SendMessageParams = {
     userId: string;
     conversationId: string;
     content: string;
+    model?: string;
 };
 
 export type SendMessageResult = {
@@ -72,6 +74,13 @@ export class SendMessageUseCase {
             );
         }
 
+        const resolvedModel = params.model ?? conversation.modelId ?? config.ai.model;
+        if (!isValidModelId(resolvedModel)) {
+            throw new ValidationError(`Invalid model: ${resolvedModel}`);
+        }
+
+        const modelDef = getModelById(resolvedModel);
+
         try {
             rateLimiter.enforce(userId);
         } catch (error) {
@@ -84,11 +93,13 @@ export class SendMessageUseCase {
             throw new QuotaExceededError(error instanceof Error ? error.message : 'Token quota exceeded');
         }
 
+        const userPosition = await messageRepo.getNextPosition(conversationId);
         const userMessage = await messageRepo.createMessage({
             conversationId,
             role: 'user',
             content: sanitizedContent,
             tokenCount: 0,
+            position: userPosition,
         });
 
         try {
@@ -102,7 +113,7 @@ export class SendMessageUseCase {
             let promptTokens = 0;
             let completionTokens = 0;
 
-            for await (const chunk of chatClient.createChatCompletionStream(messages)) {
+            for await (const chunk of chatClient.createChatCompletionStream(messages, { model: resolvedModel })) {
                 if (chunk.choices[0]?.delta?.content) {
                     assistantContent += chunk.choices[0].delta.content;
                 }
@@ -117,17 +128,24 @@ export class SendMessageUseCase {
                 completionTokens = chatClient.estimateTokenCount([{ role: 'assistant', content: assistantContent }]);
             }
             const totalTokens = promptTokens + completionTokens;
+            const cost = calculateCost(resolvedModel, promptTokens, completionTokens); // micro-USD
 
+            const assistantPosition = await messageRepo.getNextPosition(conversationId);
             const assistantMessage = await messageRepo.createMessage({
                 conversationId,
                 role: 'assistant',
                 content: assistantContent,
                 tokenCount: completionTokens,
+                modelId: resolvedModel,
+                cost,
+                position: assistantPosition,
+                inputCostPer1MSnapshot: modelDef ? toMicroUSD(modelDef.inputCostPer1M) : undefined,
+                outputCostPer1MSnapshot: modelDef ? toMicroUSD(modelDef.outputCostPer1M) : undefined,
             });
 
             await messageRepo.updateMessageTokenCount(userMessage.id, promptTokens);
-            await tokenTracker.trackUsage(userId, totalTokens);
-            await tokenTracker.updateConversationTokens(conversationId, totalTokens);
+            await tokenTracker.trackUsage(userId, totalTokens, cost);
+            await tokenTracker.updateConversationTokens(conversationId, totalTokens, cost);
 
             logger.info(
                 { conversationId, userId, promptTokens, completionTokens, totalTokens },
@@ -151,7 +169,7 @@ export class SendMessageUseCase {
                 },
             };
         } catch (error) {
-            await messageRepo.deleteMessage(userMessage.id).catch(() => {});
+            await messageRepo.softDeleteMessage(userMessage.id).catch(() => {});
             logger.error({ error, conversationId, userId }, 'Failed to get AI response');
             throw error;
         }

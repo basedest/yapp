@@ -51,6 +51,7 @@ type StreamState = {
 type SendMessageOptions = {
     conversationId: string;
     content: string;
+    model?: string;
     onChunk?: (content: string) => void;
     onComplete?: (data: {
         userMessageId: string;
@@ -101,7 +102,7 @@ export function useStreamMessage() {
     });
 
     const sendMessage = useCallback(
-        async ({ conversationId, content, onChunk, onComplete, onError, onPiiMask }: SendMessageOptions) => {
+        async ({ conversationId, content, model, onChunk, onComplete, onError, onPiiMask }: SendMessageOptions) => {
             setState({
                 isStreaming: true,
                 streamingContent: '',
@@ -115,7 +116,7 @@ export function useStreamMessage() {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ conversationId, content }),
+                    body: JSON.stringify({ conversationId, content, model }),
                 });
 
                 if (!response.ok) {

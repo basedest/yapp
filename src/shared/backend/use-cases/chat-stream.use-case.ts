@@ -12,6 +12,7 @@ import type { PiiDetectionResult } from 'src/shared/backend/pii-detection/types'
 import { extractBatchesFromBuffer } from 'src/shared/backend/pii-detection';
 import { logger } from 'src/shared/backend/logger';
 import { sanitizeInput } from 'src/shared/backend/lib/sanitize';
+import { calculateCost, getModelById, isValidModelId, toMicroUSD } from 'src/shared/config/models';
 import {
     ConversationNotFoundError,
     ForbiddenError,
@@ -33,6 +34,7 @@ export type ChatStreamParams = {
     userId: string;
     conversationId: string;
     content: string;
+    model?: string;
 };
 
 export class ChatStreamUseCase {
@@ -61,6 +63,14 @@ export class ChatStreamUseCase {
             );
         }
 
+        // Resolve model: explicit param → conversation model → global default
+        const resolvedModel = params.model ?? conversation.modelId ?? config.ai.model;
+        if (!isValidModelId(resolvedModel)) {
+            throw new ValidationError(`Invalid model: ${resolvedModel}`);
+        }
+
+        const modelDef = getModelById(resolvedModel);
+
         try {
             rateLimiter.enforce(userId);
         } catch (error) {
@@ -73,11 +83,13 @@ export class ChatStreamUseCase {
             throw new QuotaExceededError(error instanceof Error ? error.message : 'Token quota exceeded');
         }
 
+        const userPosition = await messageRepo.getNextPosition(conversationId);
         const userMessage = await messageRepo.createMessage({
             conversationId,
             role: 'user',
             content: sanitizedContent,
             tokenCount: 0,
+            position: userPosition,
         });
 
         const contextMessages = await messageRepo.findContextMessages(conversationId, config.chat.contextWindowSize);
@@ -147,7 +159,9 @@ export class ChatStreamUseCase {
                 };
 
                 try {
-                    for await (const chunk of chatClient.createChatCompletionStream(messages)) {
+                    for await (const chunk of chatClient.createChatCompletionStream(messages, {
+                        model: resolvedModel,
+                    })) {
                         if (chunk.choices[0]?.delta?.content) {
                             const c = chunk.choices[0].delta.content;
                             assistantContent += c;
@@ -175,7 +189,7 @@ export class ChatStreamUseCase {
                         }
                     }
 
-                    // Process remaining buffer (content after last newline) - was never sent for detection
+                    // Process remaining buffer
                     if (piiEnabled && contentBuffer.trim().length > 0) {
                         const baseOffset = sentOriginalLength - contentBuffer.length;
                         runDetectionAsync(contentBuffer, baseOffset);
@@ -190,12 +204,19 @@ export class ChatStreamUseCase {
                         ]);
                     }
                     const totalTokens = promptTokens + completionTokens;
+                    const cost = calculateCost(resolvedModel, promptTokens, completionTokens); // micro-USD
 
+                    const assistantPosition = await messageRepo.getNextPosition(conversationId);
                     const assistantMessage = await messageRepo.createMessage({
                         conversationId,
                         role: 'assistant',
                         content: assistantContent,
                         tokenCount: completionTokens,
+                        modelId: resolvedModel,
+                        cost,
+                        position: assistantPosition,
+                        inputCostPer1MSnapshot: modelDef ? toMicroUSD(modelDef.inputCostPer1M) : undefined,
+                        outputCostPer1MSnapshot: modelDef ? toMicroUSD(modelDef.outputCostPer1M) : undefined,
                     });
                     assistantMessageId = assistantMessage.id;
 
@@ -209,18 +230,27 @@ export class ChatStreamUseCase {
                     }
 
                     await messageRepo.updateMessageTokenCount(userMessage.id, promptTokens);
-                    await tokenTracker.trackUsage(userId, totalTokens);
-                    await tokenTracker.updateConversationTokens(conversationId, totalTokens);
+                    await tokenTracker.trackUsage(userId, totalTokens, cost);
+                    await tokenTracker.updateConversationTokens(conversationId, totalTokens, cost);
 
                     sendEvent({
                         type: 'done',
                         userMessageId: userMessage.id,
                         assistantMessageId: assistantMessage.id,
                         totalTokens,
+                        model: resolvedModel,
                     });
 
                     logger.info(
-                        { conversationId, userId, promptTokens, completionTokens, totalTokens },
+                        {
+                            conversationId,
+                            userId,
+                            model: resolvedModel,
+                            promptTokens,
+                            completionTokens,
+                            totalTokens,
+                            cost,
+                        },
                         'Streaming response completed',
                     );
                     controller.close();
@@ -228,7 +258,7 @@ export class ChatStreamUseCase {
                     logger.error({ error, conversationId, userId }, 'Streaming error');
                     sendEvent({ type: 'error', error: 'Failed to get AI response' });
                     if (!assistantMessageId) {
-                        await messageRepo.deleteMessage(userMessage.id).catch(() => {});
+                        await messageRepo.softDeleteMessage(userMessage.id).catch(() => {});
                     }
                     controller.close();
                 }

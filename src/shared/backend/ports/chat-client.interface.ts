@@ -1,7 +1,10 @@
 import type { ChatMessage, ChatCompletionChunk, ChatCompletionResponse } from 'src/shared/backend/openrouter';
 
 export interface IChatClient {
-    createChatCompletionStream(messages: ChatMessage[]): AsyncIterable<ChatCompletionChunk>;
+    createChatCompletionStream(
+        messages: ChatMessage[],
+        options?: { model?: string },
+    ): AsyncIterable<ChatCompletionChunk>;
     createChatCompletion(
         messages: ChatMessage[],
         options?: {

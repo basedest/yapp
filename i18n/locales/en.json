@@ -129,8 +129,53 @@
         "en": "English",
         "ru": "Русский"
     },
+    "models": {
+        "searchPlaceholder": "Search models...",
+        "noResults": "No models found",
+        "favorites": "Favorites",
+        "speed": {
+            "fast": "Fast",
+            "medium": "Medium",
+            "slow": "Slow"
+        },
+        "capabilities": {
+            "reasoning": "Reasoning",
+            "vision": "Vision",
+            "tools": "Tools",
+            "code": "Code",
+            "long-context": "Long context"
+        }
+    },
     "settings": {
-        "title": "Settings"
+        "title": "Settings",
+        "tabs": {
+            "account": "Account",
+            "usage": "Usage",
+            "customization": "Customization"
+        },
+        "account": {
+            "email": "Email",
+            "displayName": "Display name",
+            "memberSince": "Member since",
+            "save": "Save",
+            "saving": "Saving..."
+        },
+        "usage": {
+            "dailyQuota": "Daily quota",
+            "quotaUsed": "{percentage}% of daily quota used",
+            "resetsAt": "Resets at {time}",
+            "quotaExceeded": "Quota exceeded",
+            "conversations": "Conversations",
+            "conversationsUsed": "{count} / {limit}",
+            "conversationsRemaining": "{count} remaining"
+        },
+        "customization": {
+            "theme": "Theme",
+            "language": "Language",
+            "favoriteModels": "Favorite models",
+            "favoriteModelsDescription": "Favorites appear at the top of the model selector",
+            "noFavorites": "No favorites yet. Star models in the selector to add them."
+        }
     },
     "theme": {
         "title": "Theme",

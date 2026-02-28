@@ -22,7 +22,7 @@ export const tokenTrackingRouter = createTRPCRouter({
     }),
 
     /**
-     * Get all user quotas for the Account page (token + conversation usage)
+     * Get all user quotas for the Settings/Usage page (cost-based + conversation usage)
      */
     getAccountQuotas: protectedProcedure.query(async ({ ctx }) => {
         const TokenTracker = ctx.container.resolve<TokenTrackingService>(TOKEN_TRACKER);
@@ -35,13 +35,14 @@ export const tokenTrackingRouter = createTRPCRouter({
 
         const conversationLimit = config.chat.maxConversationsPerUser;
         const conversationRemaining = Math.max(0, conversationLimit - conversationCount);
+        const costPercentage =
+            tokenUsage.costBudget > 0 ? Math.min(100, (tokenUsage.costUsed / tokenUsage.costBudget) * 100) : 0;
 
         return {
-            token: {
-                used: tokenUsage.used,
-                limit: tokenUsage.limit,
-                remaining: tokenUsage.remaining,
+            usage: {
+                percentage: costPercentage,
                 resetAt: tokenUsage.resetAt,
+                exceeded: tokenUsage.costUsed >= tokenUsage.costBudget,
             },
             conversation: {
                 count: conversationCount,

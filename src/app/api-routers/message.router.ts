@@ -29,7 +29,7 @@ export const messageRouter = createTRPCRouter({
         .query(async ({ ctx, input }) => {
             // Verify conversation ownership
             const conversation = await prisma.conversation.findUnique({
-                where: { id: input.conversationId },
+                where: { id: input.conversationId, deletedAt: null },
                 select: { userId: true },
             });
 
@@ -57,16 +57,17 @@ export const messageRouter = createTRPCRouter({
             const cached = await cache.get(cacheKey);
             if (cached !== undefined) return cached;
 
-            // Get messages with PII detections
+            // Get messages ordered by position, excluding soft-deleted
             const messages = await prisma.message.findMany({
-                where: { conversationId: input.conversationId },
-                orderBy: { createdAt: 'asc' },
+                where: { conversationId: input.conversationId, deletedAt: null },
+                orderBy: { position: 'asc' },
                 take: input.limit,
                 skip: input.offset,
                 select: {
                     id: true,
                     role: true,
                     content: true,
+                    modelId: true,
                     tokenCount: true,
                     createdAt: true,
                     piiDetections: {
@@ -80,11 +81,12 @@ export const messageRouter = createTRPCRouter({
                 },
             });
 
-            // Transform messages to include piiMaskRegions in the expected format
+            // Expose modelId as `model` for backward compatibility with frontend
             const result = messages.map((msg) => ({
                 id: msg.id,
                 role: msg.role,
                 content: msg.content,
+                model: msg.modelId,
                 tokenCount: msg.tokenCount,
                 createdAt: msg.createdAt,
                 piiMaskRegions: msg.piiDetections.map((detection) => ({

@@ -6,12 +6,14 @@ import { useTranslations } from 'next-intl';
 import { type PiiMaskRegion } from 'src/shared/ui/pii-mask';
 import { cn } from 'src/shared/lib/utils';
 import { Markdown } from '~/src/shared/ui/markdown';
+import { getModelById } from 'src/shared/config/models';
 
 export type MessageCardProps = {
     role: 'user' | 'assistant' | 'system';
     content: string;
     timestamp: Date;
     tokenCount?: number;
+    model?: string | null; // OpenRouter model ID for assistant messages
     className?: string;
     piiMaskRegions?: PiiMaskRegion[];
     messageId?: string; // For logging unmask actions
@@ -22,6 +24,7 @@ export function MessageCard({
     content,
     timestamp,
     tokenCount,
+    model,
     className,
     piiMaskRegions = [],
     messageId,
@@ -55,7 +58,7 @@ export function MessageCard({
                 </div>
                 <div className="flex h-5 w-max items-center gap-2 px-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <span className="text-foreground/70 text-xs font-semibold">
-                        {isUser ? t('you') : t('assistant')}
+                        {isUser ? t('you') : model ? (getModelById(model)?.name ?? model) : t('assistant')}
                     </span>
                     <span className="text-muted-foreground text-xs">
                         {timestamp.toLocaleTimeString([], {

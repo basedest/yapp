@@ -129,8 +129,53 @@
         "en": "English",
         "ru": "Русский"
     },
+    "models": {
+        "searchPlaceholder": "Поиск моделей...",
+        "noResults": "Модели не найдены",
+        "favorites": "Избранные",
+        "speed": {
+            "fast": "Быстрая",
+            "medium": "Средняя",
+            "slow": "Медленная"
+        },
+        "capabilities": {
+            "reasoning": "Рассуждение",
+            "vision": "Зрение",
+            "tools": "Инструменты",
+            "code": "Код",
+            "long-context": "Длинный контекст"
+        }
+    },
     "settings": {
-        "title": "Настройки"
+        "title": "Настройки",
+        "tabs": {
+            "account": "Аккаунт",
+            "usage": "Использование",
+            "customization": "Настройки"
+        },
+        "account": {
+            "email": "Email",
+            "displayName": "Имя",
+            "memberSince": "Дата регистрации",
+            "save": "Сохранить",
+            "saving": "Сохранение..."
+        },
+        "usage": {
+            "dailyQuota": "Дневной лимит",
+            "quotaUsed": "Использовано {percentage}% дневного лимита",
+            "resetsAt": "Обновится в {time}",
+            "quotaExceeded": "Лимит исчерпан",
+            "conversations": "Диалоги",
+            "conversationsUsed": "{count} / {limit}",
+            "conversationsRemaining": "Осталось {count}"
+        },
+        "customization": {
+            "theme": "Тема",
+            "language": "Язык",
+            "favoriteModels": "Избранные модели",
+            "favoriteModelsDescription": "Избранные отображаются вверху списка моделей",
+            "noFavorites": "Пока нет избранных. Нажмите на звезду рядом с моделью."
+        }
     },
     "theme": {
         "title": "Тема",

@@ -73,8 +73,12 @@ export class OpenRouterClient {
      * @param messages - Array of chat messages
      * @returns AsyncIterable stream of completion chunks
      */
-    async *createChatCompletionStream(messages: ChatMessage[]): AsyncIterable<ChatCompletionChunk> {
-        logger.debug({ model: this.model, messageCount: messages.length }, 'Starting OpenRouter stream');
+    async *createChatCompletionStream(
+        messages: ChatMessage[],
+        options?: { model?: string },
+    ): AsyncIterable<ChatCompletionChunk> {
+        const model = options?.model ?? this.model;
+        logger.debug({ model, messageCount: messages.length }, 'Starting OpenRouter stream');
 
         const response = await fetch(`${this.baseUrl}/chat/completions`, {
             method: 'POST',
@@ -85,7 +89,7 @@ export class OpenRouterClient {
                 'X-Title': this.appTitle,
             },
             body: JSON.stringify({
-                model: this.model,
+                model,
                 messages,
                 stream: true,
             }),
