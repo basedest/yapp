@@ -130,9 +130,13 @@
         "ru": "Русский"
     },
     "models": {
+        "allDevelopers": "All developers",
         "searchPlaceholder": "Search models...",
         "noResults": "No models found",
         "favorites": "Favorites",
+        "contextWindow": "Context",
+        "developer": "Developer",
+        "benchmarks": "Benchmarks",
         "speed": {
             "fast": "Fast",
             "medium": "Medium",
@@ -143,7 +147,16 @@
             "vision": "Vision",
             "tools": "Tools",
             "code": "Code",
-            "long-context": "Long context"
+            "long-context": "Long context",
+            "clearFilters": "Clear filters"
+        },
+        "costTiers": {
+            "free": "Free",
+            "veryLow": "Very Low Cost",
+            "low": "Low Cost",
+            "medium": "Medium Cost",
+            "high": "High Cost",
+            "veryHigh": "Very High Cost"
         },
         "items": {
             "openai-gpt-4o-mini": { "name": "GPT-4o Mini", "descriptionShort": "Fast and affordable for everyday tasks" },
@@ -170,7 +183,7 @@
             "google-gemini-3-flash": { "name": "Gemini 3 Flash", "descriptionShort": "Lightning-fast with 1M context" },
             "meta-llama-llama-4-maverick": { "name": "Llama 4 Maverick", "descriptionShort": "Efficient Llama 4 MoE variant" },
             "meta-llama-llama-4-scout": { "name": "Llama 4 Scout", "descriptionShort": "Lightweight Llama 4 for inference" },
-            "zhipuai-glm-5": { "name": "GLM 5", "descriptionShort": "ZhipuAI multilingual powerhouse" },
+            "zhipuai-glm-5": { "name": "GLM 5", "descriptionShort": "Z.ai multilingual powerhouse" },
             "minimax-m2-5": { "name": "MiniMax M2.5", "descriptionShort": "MiniMax long-context model" }
         }
     },

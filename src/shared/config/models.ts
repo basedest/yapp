@@ -62,7 +62,7 @@ export const DEVELOPER_META: Record<ModelDeveloper, DeveloperMeta> = {
     xai: { label: 'xAI', sortOrder: 7 },
     qwen: { label: 'Qwen', sortOrder: 8 },
     moonshot: { label: 'Moonshot', sortOrder: 9 },
-    zhipuai: { label: 'ZhipuAI', sortOrder: 10 },
+    zhipuai: { label: 'Z.ai', sortOrder: 10 },
     minimax: { label: 'MiniMax', sortOrder: 11 },
 };
 
