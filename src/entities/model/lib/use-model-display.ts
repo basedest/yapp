@@ -27,5 +27,13 @@ export function useModelDisplay() {
                 return '';
             }
         },
+        getModelDescriptionLong: (model: ModelDefinition | null | undefined): string => {
+            if (!model?.descriptionLongKey) return '';
+            try {
+                return t(model.descriptionLongKey);
+            } catch {
+                return '';
+            }
+        },
     };
 }

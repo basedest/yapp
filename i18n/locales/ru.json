@@ -130,9 +130,13 @@
         "ru": "Русский"
     },
     "models": {
+        "allDevelopers": "Все разработчики",
         "searchPlaceholder": "Поиск моделей...",
         "noResults": "Модели не найдены",
         "favorites": "Избранные",
+        "contextWindow": "Контекст",
+        "developer": "Разработчик",
+        "benchmarks": "Бенчмарки",
         "speed": {
             "fast": "Быстрая",
             "medium": "Средняя",
@@ -143,7 +147,16 @@
             "vision": "Зрение",
             "tools": "Инструменты",
             "code": "Код",
-            "long-context": "Длинный контекст"
+            "long-context": "Длинный контекст",
+            "clearFilters": "Сбросить фильтры"
+        },
+        "costTiers": {
+            "free": "Бесплатно",
+            "veryLow": "Очень низкая стоимость",
+            "low": "Низкая стоимость",
+            "medium": "Средняя стоимость",
+            "high": "Высокая стоимость",
+            "veryHigh": "Очень высокая стоимость"
         },
         "items": {
             "openai-gpt-4o-mini": { "name": "GPT-4o Mini", "descriptionShort": "Быстрая и доступная модель для повседневных задач" },
@@ -170,7 +183,7 @@
             "google-gemini-3-flash": { "name": "Gemini 3 Flash", "descriptionShort": "Молниеносная с контекстом 1M" },
             "meta-llama-llama-4-maverick": { "name": "Llama 4 Maverick", "descriptionShort": "Эффективный вариант Llama 4 MoE" },
             "meta-llama-llama-4-scout": { "name": "Llama 4 Scout", "descriptionShort": "Облегчённая Llama 4 для инференса" },
-            "zhipuai-glm-5": { "name": "GLM 5", "descriptionShort": "Многоязычная модель ZhipuAI" },
+            "zhipuai-glm-5": { "name": "GLM 5", "descriptionShort": "Многоязычная модель Z.ai" },
             "minimax-m2-5": { "name": "MiniMax M2.5", "descriptionShort": "Модель MiniMax с длинным контекстом" }
         }
     },

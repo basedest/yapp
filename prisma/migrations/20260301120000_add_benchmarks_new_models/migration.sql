@@ -28,7 +28,7 @@ INSERT INTO "AiModel" ("id","name","developer","provider","descriptionShort","co
   ('google/gemini-3-flash',       'Gemini 3 Flash',    'google',    'openrouter', 'Lightning-fast with 1M context',     1000000,   100000,    400000, 'free',    14, true, false, NOW(), NOW()),
   ('meta-llama/llama-4-maverick', 'Llama 4 Maverick',  'meta',      'openrouter', 'Efficient Llama 4 MoE variant',       256000,   400000,   1600000, 'free',    15, true, false, NOW(), NOW()),
   ('meta-llama/llama-4-scout',    'Llama 4 Scout',     'meta',      'openrouter', 'Lightweight Llama 4 for inference',   256000,   150000,    600000, 'free',    16, true, false, NOW(), NOW()),
-  ('zhipuai/glm-5',               'GLM 5',             'zhipuai',   'openrouter', 'ZhipuAI multilingual powerhouse',     128000,  1000000,   3000000, 'standard',17, true, false, NOW(), NOW()),
+  ('zhipuai/glm-5',               'GLM 5',             'zhipuai',   'openrouter', 'Z.ai multilingual powerhouse',     128000,  1000000,   3000000, 'standard',17, true, false, NOW(), NOW()),
   ('minimax/m2.5',                'MiniMax M2.5',      'minimax',   'openrouter', 'MiniMax long-context model',         1000000,   800000,   2500000, 'standard',18, true, false, NOW(), NOW())
 ON CONFLICT ("id") DO NOTHING;
 
